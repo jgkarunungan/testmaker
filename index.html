@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini MCQ Architect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/ai-core.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- Sidebar: Subjects -->
+    <aside class="w-72 glass border-r border-slate-700 flex flex-col">
+        <div class="p-6">
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent flex items-center gap-2">
+                <i class="fas fa-brain text-blue-400"></i>
+                TestMaker AI
+            </h1>
+        </div>
+
+        <div class="px-4 mb-4">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-3 text-slate-500 text-sm"></i>
+                <input type="text" placeholder="Search subjects..." class="w-full bg-slate-900/50 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-1 ring-blue-500">
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 overflow-y-auto" id="subject-list">
+            <!-- Subjects will be appended here -->
+        </nav>
+
+        <div class="p-4 border-t border-slate-800">
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-2">History</h3>
+            <div id="history-list" class="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                <!-- History items will be appended here -->
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-800">
+            <button onclick="addSubject()" class="w-full py-2 border-2 border-dashed border-slate-700 rounded-lg hover:border-blue-500/50 hover:text-blue-400 transition-all text-slate-500 text-sm font-medium">
+                <i class="fas fa-plus mr-2"></i> Add New Subject
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content: Competencies -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
+        <!-- Header -->
+        <header class="p-6 border-b border-slate-800/60 flex justify-between items-center backdrop-blur-md bg-slate-950/30">
+            <div>
+                <div class="flex items-center gap-2 text-xs font-bold text-blue-500 uppercase tracking-widest mb-1">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    Active Project
+                </div>
+                <h2 class="text-2xl font-bold text-white" id="current-subject">Select a Subject</h2>
+            </div>
+            <div class="flex gap-3">
+                <div class="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800">
+                    <label class="text-[10px] uppercase text-slate-500 font-bold">Total Items</label>
+                    <input type="number" id="total-items" value="20" class="bg-transparent text-white w-12 outline-none font-bold text-sm">
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800">
+                    <label class="text-[10px] uppercase text-slate-500 font-bold">Student Cat</label>
+                    <select id="student-category" class="bg-transparent text-blue-400 outline-none font-bold text-xs cursor-pointer">
+                        <option value="A">Standard (A)</option>
+                        <option value="B">Leniency (B)</option>
+                    </select>
+                </div>
+                <button onclick="openSystemPrompt()" class="px-4 py-2 glass rounded-lg hover:bg-slate-800 transition-all text-sm font-medium border-slate-700">
+                    <i class="fas fa-code-json mr-2 text-indigo-400"></i> Fixed Prompt
+                </button>
+                <button onclick="generateTest(event)" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2">
+                    <i class="fas fa-magic"></i>
+                    Generate Test
+                </button>
+            </div>
+        </header>
+
+        <!-- Competency List -->
+        <section class="flex-1 overflow-y-auto p-8 space-y-6" id="competency-container">
+            <!-- Example Card -->
+            <div class="glass p-6 rounded-2xl border-l-4 border-blue-500 shadow-xl relative group">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex-1">
+                        <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Competency Title</label>
+                        <input type="text" value="Quadratic Equations"
+                               class="bg-transparent text-xl font-bold outline-none w-full border-b border-transparent focus:border-blue-500/50 pb-1">
+                    </div>
+                    <button class="p-2 text-slate-600 hover:text-red-400 transition-colors">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                <div>
+                    <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 block">AI Guidance & Notes</label>
+                    <textarea placeholder="Describe how AI should generate questions for this... (e.g. Focus on word problems involving projectile motion, use 4 options, ensure distractors are plausible calculation errors)"
+                              class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-sm text-slate-300 outline-none h-32 focus:ring-2 ring-blue-500/20 transition-all">Focus on real-world applications of the quadratic formula. Include at least one question involving area of rectangles and one involving vertical motion. Ensure difficulty is set to Grade 10 level.</textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bottom Action -->
+        <div class="p-8 pt-0">
+            <button onclick="addCompetency()" class="group flex items-center gap-3 text-slate-400 hover:text-blue-400 transition-all font-medium">
+                <span class="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center group-hover:border-blue-500 transition-all">
+                    <i class="fas fa-plus text-xs"></i>
+                </span>
+                Add New Competency
+            </button>
+        </div>
+    </main>
+
+    <!-- Fixed Prompt JSON Modal -->
+    <div id="prompt-modal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="glass w-full max-w-2xl p-8 rounded-3xl border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-white">System Configuration</h3>
+                    <p class="text-slate-400 text-sm">Gemini API Key and Global Instructions.</p>
+                </div>
+                <div class="bg-indigo-500/10 p-3 rounded-2xl">
+                    <i class="fas fa-microchip text-indigo-400 text-xl"></i>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Gemini API Key</label>
+                        <input type="password" id="api-key" placeholder="Enter your Gemini API Key..."
+                               class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-4 text-sm text-blue-300 outline-none focus:ring-2 ring-indigo-500/20">
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Primary AI Model</label>
+                        <select id="model-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-4 text-sm text-blue-300 outline-none focus:ring-2 ring-indigo-500/20">
+                            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+                            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+                    <input type="checkbox" id="enable-fallback" class="w-5 h-5 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500/20" checked>
+                    <label for="enable-fallback" class="text-sm text-slate-300">
+                        <span class="font-bold text-white block">Enable Automatic Fallback</span>
+                        <span class="text-xs text-slate-500">If your primary model fails, try other available models automatically.</span>
+                    </label>
+                </div>
+
+                <div class="relative">
+                    <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">System Logic (Fixed Prompt)</label>
+                    <div class="absolute right-4 top-8 text-[10px] font-mono text-slate-500">JSON CONFIG</div>
+                    <textarea id="system-prompt-json" class="w-full h-64 bg-slate-950 font-mono text-sm p-6 rounded-2xl border border-slate-800 text-blue-300 outline-none focus:ring-2 ring-indigo-500/20">
+{
+  "role": "Expert Pedagogical Assessment Generator",
+  "format": "Multiple Choice Questions",
+  "config": {
+    "options_per_question": 4,
+    "language": "Match Subject/Competency",
+    "output_schema": {
+      "question": "string",
+      "options": ["string"],
+      "answer_index": "number",
+      "cognitive_level": "string",
+      "rationale": "string"
+    }
+  },
+  "constraints": [
+    "Avoid trick questions unless specified",
+    "Ensure all distractors are plausible",
+    "Keep language inclusive and professional"
+  ]
+}
+                    </textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-8 gap-4">
+                <button onclick="closeSystemPrompt()" class="px-6 py-2 text-slate-400 hover:text-white transition-colors font-medium">Discard</button>
+                <button onclick="saveSystemPrompt()" class="px-8 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all">
+                    Apply Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="results-modal" class="fixed inset-0 bg-black/95 hidden items-center justify-center z-[60] backdrop-blur-md p-4">
+        <div class="glass w-full max-w-4xl max-h-[90vh] flex flex-col p-8 rounded-3xl border-slate-700 shadow-2xl overflow-hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-white">Generated Assessment</h3>
+                    <p class="text-slate-400 text-sm">Review the questions generated by Gemini AI.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="downloadTOSCSV(lastGeneratedResults)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-bold transition-all">
+                        <i class="fas fa-table mr-2"></i> Download TOS
+                    </button>
+                    <button onclick="downloadJSON(lastGeneratedResults)" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20">
+                        <i class="fas fa-file-download mr-2"></i> Save as JSON
+                    </button>
+                    <button onclick="copyToClipboard()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm transition-all">
+                        <i class="fas fa-copy mr-2"></i> Copy JSON
+                    </button>
+                    <button onclick="closeResults()" class="px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-xl text-sm transition-all">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="results-content" class="flex-1 overflow-y-auto space-y-8 pr-4 custom-scrollbar selection:bg-blue-500/30 selection:text-blue-200">
+                <!-- Questions will be injected here -->
+            </div>
+
+            <!-- Global Refinement Footer -->
+            <div class="mt-6 pt-6 border-t border-slate-800">
+                <div class="flex gap-3">
+                    <input type="text" id="global-refine-input" placeholder="Type a follow-up prompt to change the whole questionnaire... (e.g. 'Translate everything to Filipino')" 
+                           class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 ring-blue-500/20">
+                    <button onclick="refineFullAssessment()" id="global-refine-btn" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition-all flex items-center gap-2">
+                        <i class="fas fa-paper-plane"></i> Update All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contextual Refinement Toolbar (Floating) -->
+    <div id="refine-toolbar" class="fixed hidden z-[100] bg-slate-900 border border-slate-700 shadow-2xl rounded-xl p-2 flex gap-2 items-center animate-in zoom-in-95 duration-200">
+        <button onclick="openRefineDialog()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg flex items-center gap-2">
+            <i class="fas fa-magic"></i> Refine Selection
+        </button>
+    </div>
+
+    <!-- Refine Dialog Modal -->
+    <div id="refine-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[110] backdrop-blur-sm p-4">
+        <div class="glass w-full max-w-lg p-6 rounded-2xl border-slate-700 shadow-2xl">
+            <h4 class="text-lg font-bold text-white mb-2">Refine Questionnaire</h4>
+            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800 mb-4">
+                <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Selected Text</p>
+                <p id="selected-text-preview" class="text-sm text-slate-300 italic line-clamp-3"></p>
+            </div>
+            <textarea id="refine-instruction" placeholder="e.g., 'Translate this to Filipino', 'Make this harder', 'Change the correct answer to...'" 
+                      class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white outline-none focus:ring-2 ring-blue-500/20 h-24 mb-6"></textarea>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeRefineDialog()" class="px-4 py-2 text-slate-400 text-sm">Cancel</button>
+                <button id="refine-confirm-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm transition-all">
+                    Apply Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Subject Modal -->
+    <div id="subject-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[70] backdrop-blur-sm p-4">
+        <div class="glass w-full max-w-md p-8 rounded-3xl border-slate-700 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-2">Create New Subject</h3>
+            <p class="text-slate-400 text-sm mb-6">Enter a name to categorize your learning competencies.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Subject Name</label>
+                    <input type="text" id="new-subject-name" placeholder="e.g. Physical Science"
+                           class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white outline-none focus:ring-2 ring-blue-500/20 transition-all">
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-8 gap-4">
+                <button onclick="closeSubjectModal()" class="px-6 py-2 text-slate-400 hover:text-white transition-colors font-medium">Cancel</button>
+                <button onclick="confirmAddSubject()" class="px-8 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all">
+                    Create Subject
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            subjects: [
+                { id: '1', name: 'Mathematics', competencies: [
+                    { id: 'c1', title: 'Quadratic Equations', notes: 'Focus on real-world applications of the quadratic formula. Include at least one question involving area of rectangles and one involving vertical motion. Ensure difficulty is set to Grade 10 level.' }
+                ]}
+            ],
+            currentSubjectId: localStorage.getItem('testmaker_current_subject') || '1',
+            apiKey: localStorage.getItem('gemini_api_key') || '',
+            selectedModel: localStorage.getItem('testmaker_model') || 'gemini-1.5-flash',
+            useFallback: localStorage.getItem('testmaker_use_fallback') !== 'false',
+            history: JSON.parse(localStorage.getItem('testmaker_history') || '[]'),
+            systemPrompt: localStorage.getItem('system_prompt') || `{
+  "role": "Expert Pedagogical Assessment Generator",
+  "format": "Multiple Choice Questions",
+  "config": {
+    "options_per_question": 4,
+    "language": "Match Subject/Competency",
+    "output_schema": {
+      "question": "string",
+      "options": ["string"],
+      "answer_index": "number",
+      "cognitive_level": "string",
+      "rationale": "string"
+    }
+  },
+  "constraints": [
+    "Avoid trick questions unless specified",
+    "Ensure all distractors are plausible",
+    "Keep language inclusive and professional"
+  ]
+}`
+        };
+
+        // Initialize from LocalStorage
+        const savedState = localStorage.getItem('testmaker_state');
+        if (savedState) {
+            state.subjects = JSON.parse(savedState);
+            // Ensure currentSubjectId is valid or default to first subject
+            if (!state.subjects.find(s => s.id === state.currentSubjectId) && state.subjects.length > 0) {
+                state.currentSubjectId = state.subjects[0].id;
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('testmaker_state', JSON.stringify(state.subjects));
+            localStorage.setItem('testmaker_current_subject', state.currentSubjectId);
+            localStorage.setItem('testmaker_model', state.selectedModel);
+            localStorage.setItem('testmaker_use_fallback', state.useFallback);
+            localStorage.setItem('testmaker_history', JSON.stringify(state.history));
+            localStorage.setItem('gemini_api_key', state.apiKey);
+            localStorage.setItem('system_prompt', state.systemPrompt);
+        }
+
+        function renderSubjects() {
+            const nav = document.getElementById('subject-list');
+            nav.innerHTML = '';
+            state.subjects.forEach(sub => {
+                const isActive = sub.id === state.currentSubjectId;
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-4 py-2 rounded-lg transition-all flex items-center justify-between group ${isActive ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 font-medium' : 'text-slate-400 hover:bg-slate-800'}`;
+                btn.onclick = () => selectSubject(sub.id);
+                btn.innerHTML = `
+                    <span><i class="fas fa-book-open mr-2"></i> ${sub.name}</span>
+                    <i onclick="deleteSubject(event, '${sub.id}')" class="fas fa-times opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity p-1"></i>
+                `;
+                nav.appendChild(btn);
+            });
+        }
+
+        function renderCompetencies() {
+            const container = document.getElementById('competency-container');
+            container.innerHTML = '';
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            
+            if (!subject) {
+                document.getElementById('current-subject').innerText = 'No Subject Selected';
+                return;
+            }
+
+            document.getElementById('current-subject').innerText = subject.name;
+
+            subject.competencies.forEach(comp => {
+                const div = document.createElement('div');
+                div.className = 'glass p-6 rounded-2xl border-l-4 border-blue-500 shadow-xl relative group mb-6';
+                div.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="md:col-span-3">
+                                <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Competency Title</label>
+                                <input type="text" value="${comp.title}" onchange="updateCompetency('${comp.id}', 'title', this.value)"
+                                       class="bg-transparent text-xl font-bold outline-none w-full border-b border-transparent focus:border-blue-500/50 pb-1">
+                            </div>
+                            <div>
+                                <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Teaching Hours</label>
+                                <input type="number" value="${comp.hours || 1}" onchange="updateCompetency('${comp.id}', 'hours', this.value)"
+                                       class="bg-slate-950/50 border border-slate-800 rounded-lg py-1 px-3 w-full text-blue-400 outline-none focus:ring-1 ring-blue-500/30">
+                            </div>
+                        </div>
+                        <button onclick="deleteCompetency('${comp.id}')" class="p-2 text-slate-600 hover:text-red-400 transition-colors">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 block">AI Guidance & Notes</label>
+                        <textarea onchange="updateCompetency('${comp.id}', 'notes', this.value)"
+                                  placeholder="Describe how AI should generate questions for this..."
+                                  class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-sm text-slate-300 outline-none h-32 focus:ring-2 ring-blue-500/20 transition-all">${comp.notes}</textarea>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function selectSubject(id) {
+            state.currentSubjectId = id;
+            renderSubjects();
+            renderCompetencies();
+        }
+
+        function addSubject() {
+            document.getElementById('new-subject-name').value = '';
+            const modal = document.getElementById('subject-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.getElementById('new-subject-name').focus();
+        }
+
+        function closeSubjectModal() {
+            document.getElementById('subject-modal').classList.add('hidden');
+            document.getElementById('subject-modal').classList.remove('flex');
+        }
+
+        function confirmAddSubject() {
+            const name = document.getElementById('new-subject-name').value.trim();
+            if (name) {
+                const id = Date.now().toString();
+                state.subjects.push({ id, name, competencies: [] });
+                state.currentSubjectId = id;
+                saveToLocalStorage();
+                renderSubjects();
+                renderCompetencies();
+                closeSubjectModal();
+            }
+        }
+
+        function deleteSubject(event, id) {
+            event.stopPropagation();
+            if (confirm('Delete this subject and all its competencies?')) {
+                state.subjects = state.subjects.filter(s => s.id !== id);
+                if (state.currentSubjectId === id && state.subjects.length > 0) {
+                    state.currentSubjectId = state.subjects[0].id;
+                }
+                saveToLocalStorage();
+                renderSubjects();
+                renderCompetencies();
+            }
+        }
+
+        function addCompetency() {
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            if (subject) {
+                subject.competencies.push({
+                    id: Date.now().toString(),
+                    title: '',
+                    notes: '',
+                    hours: 1
+                });
+                saveToLocalStorage();
+                renderCompetencies();
+            }
+        }
+
+        function updateCompetency(compId, field, value) {
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            const comp = subject.competencies.find(c => c.id === compId);
+            if (comp) {
+                comp[field] = value;
+                saveToLocalStorage();
+            }
+        }
+
+        function deleteCompetency(compId) {
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            subject.competencies = subject.competencies.filter(c => c.id !== compId);
+            saveToLocalStorage();
+            renderCompetencies();
+        }
+
+        function openSystemPrompt() {
+            document.getElementById('api-key').value = state.apiKey;
+            document.getElementById('model-select').value = state.selectedModel;
+            document.getElementById('enable-fallback').checked = state.useFallback;
+            document.getElementById('system-prompt-json').value = state.systemPrompt;
+            const modal = document.getElementById('prompt-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeSystemPrompt() {
+            document.getElementById('prompt-modal').classList.add('hidden');
+            document.getElementById('prompt-modal').classList.remove('flex');
+        }
+
+        function updateTutorEngineModels() {
+            // This function used to update TutorEngine.models
+            // Since we're using ai-core.js now, we'll handle model selection in the generate function
+        }
+
+        function saveSystemPrompt() {
+            state.apiKey = document.getElementById('api-key').value;
+            state.selectedModel = document.getElementById('model-select').value;
+            state.useFallback = document.getElementById('enable-fallback').checked;
+            state.systemPrompt = document.getElementById('system-prompt-json').value;
+            saveToLocalStorage();
+            updateTutorEngineModels();
+            closeSystemPrompt();
+            alert('Settings saved!');
+        }
+
+        let lastGeneratedResults = null;
+        let selectedRefinement = { text: '', range: null, container: null };
+
+        // Handle Text Selection for Refinement
+        document.addEventListener('mouseup', function(e) {
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+            const resultsContent = document.getElementById('results-content');
+            
+            if (text && resultsContent.contains(selection.anchorNode)) {
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                
+                selectedRefinement = {
+                    text: text,
+                    range: range,
+                    container: selection.anchorNode.parentElement
+                };
+
+                const toolbar = document.getElementById('refine-toolbar');
+                toolbar.style.top = `${rect.top + window.scrollY - 40}px`;
+                toolbar.style.left = `${rect.left + window.scrollX + (rect.width / 2) - 60}px`;
+                toolbar.classList.remove('hidden');
+            } else {
+                if (!e.target.closest('#refine-toolbar') && !e.target.closest('#refine-modal')) {
+                    document.getElementById('refine-toolbar').classList.add('hidden');
+                }
+            }
+        });
+
+        function openRefineDialog() {
+            document.getElementById('selected-text-preview').innerText = selectedRefinement.text;
+            document.getElementById('refine-instruction').value = '';
+            document.getElementById('refine-toolbar').classList.add('hidden');
+            const modal = document.getElementById('refine-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            document.getElementById('refine-confirm-btn').onclick = processRefinement;
+        }
+
+        function closeRefineDialog() {
+            document.getElementById('refine-modal').classList.add('hidden');
+            document.getElementById('refine-modal').classList.remove('flex');
+        }
+
+        async function processRefinement() {
+            const instruction = document.getElementById('refine-instruction').value.trim();
+            if (!instruction) return;
+
+            const btn = document.getElementById('refine-confirm-btn');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = 'Refining...';
+
+            try {
+                const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+                const refinedText = await callRefineSegment({
+                    apiKey: state.apiKey,
+                    subject: subject ? subject.name : 'General',
+                    promptText: instruction,
+                    context: selectedRefinement.text,
+                    selectedModel: state.selectedModel
+                });
+
+                if (refinedText) {
+                    // Update the UI directly where the text was selected
+                    const textNode = document.createTextNode(refinedText);
+                    selectedRefinement.range.deleteContents();
+                    selectedRefinement.range.insertNode(textNode);
+                    
+                    // Also update the internal JSON results if needed (for copy JSON)
+                    // (Simplified here to just update the UI for immediate preview)
+                    
+                    closeRefineDialog();
+                }
+            } catch (error) {
+                alert("Refinement failed: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        }
+
+        function copyToClipboard() {
+            if (lastGeneratedResults) {
+                navigator.clipboard.writeText(JSON.stringify(lastGeneratedResults, null, 2));
+                alert("Copied to clipboard!");
+            }
+        }
+
+        function closeResults() {
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('results-modal').classList.remove('flex');
+        }
+
+        function getQuestionsArray(res) {
+            if (Array.isArray(res.questions)) return res.questions;
+            if (typeof res.questions === 'object' && res.questions !== null) {
+                const arrayKey = Object.keys(res.questions).find(key => Array.isArray(res.questions[key]));
+                return arrayKey ? res.questions[arrayKey] : [];
+            }
+            return [];
+        }
+
+        function showResults(results) {
+            lastGeneratedResults = results;
+            const container = document.getElementById('results-content');
+            container.innerHTML = '';
+
+            let globalCounter = 1;
+
+            results.forEach((res, resIdx) => {
+                const section = document.createElement('div');
+                const competencyLevel = res.questions.identified_competency_level || 'Not Identified';
+                
+                section.innerHTML = `
+                    <div class="flex justify-between items-end mb-4 mt-8 first:mt-0">
+                        <h4 class="text-indigo-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+                            <span class="w-8 h-[1px] bg-indigo-500/30"></span>
+                            ${res.competency}
+                        </h4>
+                        <div class="text-[10px] bg-slate-800 text-slate-400 px-3 py-1 rounded-full border border-slate-700">
+                            Competency Ceiling: <span class="text-white font-bold">${competencyLevel}</span>
+                        </div>
+                    </div>
+                `;
+
+                const questions = getQuestionsArray(res);
+
+                if (questions.length === 0) {
+                    const emptyMsg = document.createElement('div');
+                    emptyMsg.className = 'p-6 border border-dashed border-slate-800 rounded-2xl text-center text-slate-500 text-xs';
+                    emptyMsg.innerText = 'No questions were generated for this competency. Try refining the whole assessment or check the "Teaching Hours" distribution.';
+                    section.appendChild(emptyMsg);
+                }
+
+                questions.forEach((q, qIdx) => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-slate-900/40 border border-slate-800 p-6 rounded-2xl mb-4 relative group';
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-4">
+                            <p class="text-white font-medium flex-1"><span class="text-slate-500 mr-2">Q${globalCounter++}.</span> ${q.question}</p>
+                            ${q.cognitive_level ? `
+                                <span class="px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[9px] font-bold uppercase border border-indigo-500/20">
+                                    ${q.cognitive_level}
+                                </span>
+                            ` : ''}
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                            ${(q.options || []).map((opt, i) => `
+                                <div class="p-3 rounded-xl border ${i === q.answer_index ? 'border-green-500/50 bg-green-500/5 text-green-400' : 'border-slate-800 bg-slate-950/50 text-slate-400'} text-sm">
+                                    <span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span> ${opt}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="bg-blue-500/5 border border-blue-500/10 p-4 rounded-xl mb-4">
+                            <p class="text-[10px] text-blue-400 font-bold uppercase mb-1">Rationale</p>
+                            <p class="text-xs text-slate-400 italic">${q.rationale || 'No rationale provided.'}</p>
+                        </div>
+                        
+                        <!-- Per-item refinement -->
+                        <div class="flex gap-2 items-center pt-4 border-t border-slate-800/50">
+                            <input type="text" placeholder="Refine just this question..." 
+                                   class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 outline-none focus:ring-1 ring-blue-500/30">
+                            <button onclick="refineIndividualItem(this, ${resIdx}, ${qIdx})" 
+                                    class="px-3 py-1.5 bg-slate-800 hover:bg-blue-600 text-white text-[10px] font-bold rounded-lg transition-all">
+                                Update Item
+                            </button>
+                        </div>
+                    `;
+                    section.appendChild(card);
+                });
+                container.appendChild(section);
+            });
+
+            const modal = document.getElementById('results-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        async function refineIndividualItem(btn, resIdx, qIdx) {
+            const input = btn.previousElementSibling;
+            const instruction = input.value.trim();
+            if (!instruction) return;
+
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = 'Refining...';
+
+            try {
+                const competency = lastGeneratedResults[resIdx];
+                const questions = getQuestionsArray(competency);
+                const questionItem = questions[qIdx];
+
+                if (!questionItem) throw new Error("Could not find the target question for refinement.");
+
+                const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+                const result = await callRefineItem({
+                    apiKey: state.apiKey,
+                    subject: subject ? subject.name : 'General',
+                    questionItem: questionItem,
+                    instruction: instruction,
+                    selectedModel: state.selectedModel
+                });
+
+                if (result.success) {
+                    console.log("Refined Item Response:", result.text);
+                    const updatedItem = JSON.parse(result.text);
+                    // Update internal data
+                    questions[qIdx] = updatedItem;
+                    // Re-render to show changes (and maintain numbering)
+                    showResults(lastGeneratedResults);
+                    input.value = '';
+                } else {
+                    alert("Refinement failed: " + result.text);
+                }
+            } catch (error) {
+                console.error("Refinement Error:", error);
+                alert("Item refinement failed: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        }
+
+        function downloadJSON(data, filename) {
+            if (!data) return;
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            const category = data[0]?.category || 'A';
+            
+            // Generate a unique version number for this subject/category
+            const storageKey = `vcount_${state.currentSubjectId}_${category}`;
+            let version = parseInt(localStorage.getItem(storageKey) || "1");
+            
+            const name = filename || `assessment-${subject ? subject.name.replace(/\s+/g, '-') : 'export'}-Cat${category}-v${version}.json`;
+            
+            // Increment version for next time
+            localStorage.setItem(storageKey, (version + 1).toString());
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function addToHistory(results) {
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            const historyItem = {
+                id: Date.now(),
+                subjectName: subject ? subject.name : 'Unknown',
+                timestamp: new Date().toLocaleString(),
+                data: results
+            };
+            state.history.unshift(historyItem);
+            if (state.history.length > 20) state.history.pop();
+            saveToLocalStorage();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            container.innerHTML = '';
+            state.history.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'w-full flex items-center gap-2 group mb-2';
+                
+                const btn = document.createElement('button');
+                btn.className = 'flex-1 text-left p-3 rounded-xl bg-slate-900/50 border border-slate-800 hover:border-blue-500/50 transition-all';
+                btn.onclick = () => showResults(item.data);
+                btn.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold text-slate-300 truncate w-24">${item.subjectName}</span>
+                        <span class="text-[9px] text-slate-600">${item.timestamp.split(',')[0]}</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1">${item.data.length} Comps | Cat ${item.category || 'A'}</p>
+                `;
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = 'p-2 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity';
+                delBtn.onclick = (e) => { e.stopPropagation(); deleteHistory(index); };
+                delBtn.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>';
+                
+                div.appendChild(btn);
+                div.appendChild(delBtn);
+                container.appendChild(div);
+            });
+        }
+
+        function deleteHistory(index) {
+            if(confirm('Delete this history item?')) {
+                state.history.splice(index, 1);
+                saveToLocalStorage();
+                renderHistory();
+            }
+        }
+
+        function downloadTOSCSV(results) {
+            if (!results) return;
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            const category = results[0]?.category || 'A';
+            
+            let csv = `Table of Specifications (TOS) - ${subject?.name || 'Subject'}\n`;
+            csv += `Category: ${category}\n\n`;
+            csv += `Learning Competency,Remembering,Understanding,Applying,Analyzing,Evaluating,Total Items\n`;
+            
+            let globalCounter = 1;
+            results.forEach(res => {
+                const qs = getQuestionsArray(res);
+                const itemsByLevel = {
+                    'Remembering': [],
+                    'Understanding': [],
+                    'Applying': [],
+                    'Analyzing': [],
+                    'Evaluating': []
+                };
+                
+                qs.forEach(q => {
+                    const level = q.cognitive_level || 'Remembering';
+                    if (itemsByLevel[level]) {
+                        itemsByLevel[level].push(globalCounter);
+                    }
+                    globalCounter++;
+                });
+                
+                csv += `"${res.competency}",`;
+                csv += `"${itemsByLevel['Remembering'].join(', ')}",`;
+                csv += `"${itemsByLevel['Understanding'].join(', ')}",`;
+                csv += `"${itemsByLevel['Applying'].join(', ')}",`;
+                csv += `"${itemsByLevel['Analyzing'].join(', ')}",`;
+                csv += `"${itemsByLevel['Evaluating'].join(', ')}",`;
+                csv += `${qs.length}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `TOS-${subject ? subject.name.replace(/\s+/g, '-') : 'export'}-${Date.now()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function addToHistory(results, category) {
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            const historyItem = {
+                id: Date.now(),
+                subjectName: subject ? subject.name : 'Unknown',
+                timestamp: new Date().toLocaleString(),
+                category: category,
+                data: results
+            };
+            state.history.unshift(historyItem);
+            if (state.history.length > 20) state.history.pop();
+            saveToLocalStorage();
+            renderHistory();
+        }
+
+        async function refineFullAssessment() {
+            const instruction = document.getElementById('global-refine-input').value.trim();
+            if (!instruction || !lastGeneratedResults) return;
+
+            const btn = document.getElementById('global-refine-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Updating...';
+
+            try {
+                const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+                const result = await callRefineAssessment({
+                    apiKey: state.apiKey,
+                    subject: subject ? subject.name : 'General',
+                    currentAssessment: lastGeneratedResults,
+                    instruction: instruction,
+                    selectedModel: state.selectedModel
+                });
+
+                if (result.success) {
+                    const updatedData = JSON.parse(result.text);
+                    showResults(updatedData);
+                    document.getElementById('global-refine-input').value = '';
+                }
+            } catch (error) {
+                alert("Global refinement failed: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function generateTest(event) {
+            if (!state.apiKey) {
+                alert("Please set your Gemini API Key in 'Fixed Prompt' settings.");
+                openSystemPrompt();
+                return;
+            }
+
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            if (!subject || subject.competencies.length === 0) {
+                alert("Please add at least one competency.");
+                return;
+            }
+
+            const totalExamItems = parseInt(document.getElementById('total-items').value) || 20;
+            const category = document.getElementById('student-category').value;
+            const totalHours = subject.competencies.reduce((sum, c) => sum + (parseFloat(c.hours) || 1), 0);
+
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> AI is thinking...';
+
+            try {
+                let systemPromptJson;
+                try {
+                    systemPromptJson = JSON.parse(state.systemPrompt.trim());
+                } catch (e) {
+                    throw new Error("Invalid System Prompt JSON. Please check your settings.");
+                }
+
+                const results = [];
+                for (const comp of subject.competencies) {
+                    if (!comp.title.trim()) continue;
+
+                    const result = await callGenerateMCQ({
+                        apiKey: state.apiKey,
+                        subject: subject.name,
+                        competency: comp.title,
+                        notes: comp.notes,
+                        hours: parseFloat(comp.hours) || 1,
+                        totalExamItems: totalExamItems,
+                        totalHours: totalHours,
+                        category: category,
+                        systemPrompt: systemPromptJson,
+                        selectedModel: state.selectedModel,
+                        useFallback: state.useFallback
+                    });
+
+                    if (result.success) {
+                        // Robust JSON extraction
+                        let cleanJson = result.text.trim();
+                        const firstBrace = cleanJson.indexOf('{');
+                        const lastBrace = cleanJson.lastIndexOf('}');
+                        const firstBracket = cleanJson.indexOf('[');
+                        const lastBracket = cleanJson.lastIndexOf(']');
+
+                        let start = -1, end = -1;
+                        if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+                            start = firstBrace;
+                            end = lastBrace;
+                        } else if (firstBracket !== -1) {
+                            start = firstBracket;
+                            end = lastBracket;
+                        }
+
+                        if (start === -1 || end === -1) throw new Error("AI did not return valid JSON format");
+                        
+                        const jsonString = cleanJson.substring(start, end + 1);
+                        const parsedData = JSON.parse(jsonString);
+                        results.push({ competency: comp.title, questions: parsedData, category: category });
+                    }
+                }
+
+                showResults(results);
+                addToHistory(results, category);
+
+            } catch (error) {
+                alert("Error: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Initial Render
+        updateTutorEngineModels();
+        renderSubjects();
+        renderCompetencies();
+        renderHistory();
+
+        // Listen for Enter key on Subject Name
+        document.getElementById('new-subject-name').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                confirmAddSubject();
+            }
+        });
+    </script>
+</body>
+</html>

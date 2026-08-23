@@ -1,0 +1,386 @@
+{
+  "exportType": "full_assessment",
+  "subject": "Subject",
+  "category": "A",
+  "generatedAt": "2026-07-27T13:06:30.131Z",
+  "data": [
+    {
+      "competency": " Naiuugnay ang mga kultura at kamalayang pangkasaysayan sa  sariling konteksto at karanasan ",
+      "questions": {
+        "identified_competency_level": "Evaluating",
+        "questions": [
+          {
+            "question": "Ano ang pangunahing kahulugan ng terminong 'Ilaya' sa konteksto ng sinaunang pamayanang Filipino?",
+            "options": [
+              "Dakong ibaba o baybaying dagat",
+              "Dakong itaas o kabundukan",
+              "Gitnang bahagi ng kapatagan",
+              "Pook na malapit sa bukana ng ilog"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Remembering",
+            "rationale": "Tinutukoy ng 'Ilaya' ang mataas na bahagi o kabundukan, batay sa mga batayang kaalaman sa modyul."
+          },
+          {
+            "question": "Ano ang tawag sa sistema ng pautang o 'honor system' kung saan iniiwan ang kalakal at babayaran na lamang sa susunod na pagkikita?",
+            "options": [
+              "Sandugo",
+              "Bahandi",
+              "Binatuan",
+              "Barter"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Remembering",
+            "rationale": "Ang 'Binatuan system' ay ang sistema ng tiwala sa palitan ng kalakal sa pagitan ng Ilaya at Ilawod."
+          },
+          {
+            "question": "Alin sa mga sumusunod ang itinuturing na 'bahandi' sa lipunang sinaunang Filipino?",
+            "options": [
+              "Mga produktong agrikultural tulad ng palay",
+              "Mga kagamitang yari sa kahoy at dagta",
+              "Mga simbolo ng yaman tulad ng porselana, tanso, at gong",
+              "Mga isdang huli mula sa dagat"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Remembering",
+            "rationale": "Ang bahandi ay tumutukoy sa mga bagay na sumisimbolo ng yaman at kapangyarihan gaya ng porselana at tanso."
+          },
+          {
+            "question": "Ano ang pangunahing dahilan kung bakit kinakailangan ng mga taga-Ilawod ang mga produkto mula sa Ilaya?",
+            "options": [
+              "Kailangan nila ng dagta at pagkit para sa teknolohiya at kalakalan",
+              "Kailangan nila ng mga gintong alahas para sa ritwal",
+              "Kailangan nila ng mga balangay para sa paglalakbay",
+              "Kailangan nila ng mga lupang matataba para sa pangingisda"
+            ],
+            "answer_index": 0,
+            "cognitive_level": "Understanding",
+            "rationale": "Ang ugnayan ay nakabase sa pangangailangan: kailangan ng Ilawod ang yamang gubat (dagta, pagkit) mula sa Ilaya."
+          },
+          {
+            "question": "Paano nagsisilbing sentro ng ugnayan ang mga ilog sa sinaunang kalakalan?",
+            "options": [
+              "Ito ang nagsisilbing hangganan ng mga teritoryo ng Ilaya at Ilawod",
+              "Ito ang pangunahing daanan ng kalakalan at lokasyon ng mga tabuan",
+              "Dito ginaganap ang mga seremonya ng kasal sa pagitan ng mga tribo",
+              "Ito ang pangunahing imbakan ng lahat ng bahandi"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Understanding",
+            "rationale": "Ang mga ilog ang nagsisilbing daluyan ng kalakal at lugar kung saan nagtatagpo (tabuan) ang mga grupo."
+          },
+          {
+            "question": "Bakit itinuturing na kritikal ang katapatan sa sistemang binatuan?",
+            "options": [
+              "Dahil walang batas na nagpaparusa sa magnanakaw",
+              "Dahil ang pagbawi ng tiwala ay may kaakibat na kahihiyan at parusa",
+              "Dahil mas madaling magpalit ng produkto kung magkaibigan",
+              "Dahil ito ang tanging paraan para maging pinuno"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Understanding",
+            "rationale": "Ang kredibilidad ay nakasalalay sa pagtupad sa pangako; ang paglabag ay nagdudulot ng kahihiyan."
+          },
+          {
+            "question": "Alin sa mga sumusunod ang nagpapakita ng ugnayan ng kabuhayan ng Ilaya at Ilawod sa kasalukuyang panahon?",
+            "options": [
+              "Ang pag-aangkat ng isda mula sa dagat patungo sa mga pamilihan sa kabundukan",
+              "Ang pagtatayo ng mga pabrika sa mga bundok",
+              "Ang pagbabawal sa kalakalan sa pagitan ng lungsod at kanayunan",
+              "Ang paggamit ng mga modernong sasakyan sa halip na ilog"
+            ],
+            "answer_index": 0,
+            "cognitive_level": "Applying",
+            "rationale": "Ang pangangailangan ng bundok sa dagat (isda/asin) at kabundukan (gulay/kahoy) ay buhay na konsepto sa ating ekonomiya."
+          },
+          {
+            "question": "Kung ikaw ay isang pinuno ng pamayanan, bakit mo pipiliing magsagawa ng Sandugo sa ibang grupo?",
+            "options": [
+              "Upang ipakita na mas malakas ang aking hukbo",
+              "Upang pagtibayin ang alyansa at siguraduhin ang kapayapaan",
+              "Upang makakuha ng libreng porselana at tanso",
+              "Upang kontrolin ang kalakalan ng pangingisda"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Applying",
+            "rationale": "Ang Sandugo ay estratehikong paraan upang magkaroon ng alyansa at mapanatili ang kapayapaan."
+          },
+          {
+            "question": "Paano mo maiuugnay ang konsepto ng 'bahandi' sa kasalukuyang pagpapahalaga natin sa mga materyal na bagay?",
+            "options": [
+              "Ginagamit natin ang mga ito bilang pangunahing pagkain",
+              "Itinuturing natin itong simbolo ng katayuan sa lipunan at yaman",
+              "Hindi na mahalaga ang mga materyal na bagay sa modernong panahon",
+              "Ang mga ito ay ginagamit lamang bilang dekorasyon sa bahay"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Applying",
+            "rationale": "Tulad ng bahandi, ang mga bagay na materyal ay madalas gamitin bilang batayan ng katayuan sa lipunan."
+          },
+          {
+            "question": "Batay sa ugnayang Ilaya at Ilawod, ano ang implikasyon ng pagkakaiba ng kanilang kabuhayan sa kanilang pag-unlad?",
+            "options": [
+              "Nagdulot ito ng hindi pagkakaunawaan at digmaan",
+              "Naging daan ito upang maging independyente ang bawat isa",
+              "Nagbunsod ito ng pagtutulungan at interdependence upang matugunan ang kanilang pangangailangan",
+              "Nagdulot ito ng paghina ng kanilang teknolohiya dahil sa pag-asa sa iba"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Analyzing",
+            "rationale": "Ang pagkakaiba ng resources (specialization) ay nagtulak sa kanila na makipagpalitan para sa kanilang mga kakulangan."
+          },
+          {
+            "question": "Ano ang papel ng 'tiwala' sa pagpapanatili ng sistema ng kalakalan sa pagitan ng magkakaibang pamayanan?",
+            "options": [
+              "Ito ang nagbibigay ng pagkakataon na manloko sa kapwa",
+              "Ito ang pundasyon na nagbibigay-daan sa pangmatagalang ugnayan at seguridad",
+              "Ito ay opsysonal lamang sa mga maliliit na kalakalan",
+              "Ito ay hadlang sa mabilis na pagyaman ng mga negosyante"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Analyzing",
+            "rationale": "Ang tiwala ay kritikal dahil wala silang nakasulat na kontrata gaya ng sa modernong panahon."
+          },
+          {
+            "question": "Suriin ang ugnayan ng Ilaya at Ilawod: Paano nakaapekto ang heograpiya sa kanilang kultura?",
+            "options": [
+              "Ang heograpiya ay nagtakda ng kanilang hanapbuhay at mga produktong ipinagpapalitan",
+              "Ang heograpiya ay walang kinalaman sa kanilang pag-unlad",
+              "Pinilit ng heograpiya ang mga taga-Ilaya na tumira sa dagat",
+              "Naging hadlang ang bundok at dagat upang sila ay mag-usap"
+            ],
+            "answer_index": 0,
+            "cognitive_level": "Analyzing",
+            "rationale": "Ang pisikal na lokasyon (bundok vs. dagat) ay direktang humubog sa kanilang kabuhayan."
+          },
+          {
+            "question": "Bakit maituturing na isang matalinong stratehiya ang sistemang 'Sandugo' at pag-aasawahan sa pagitan ng mga pamayanan?",
+            "options": [
+              "Dahil ito ay nakakabawas sa gastos ng pagkain",
+              "Dahil ito ay nag-aalis ng pangangailangan sa militar",
+              "Dahil pinapatibay nito ang alyansa na nagreresulta sa katatagan ng kalakalan at seguridad",
+              "Dahil ito ay nagbibigay ng karapatan sa mga pinuno na sakupin ang ibang lupa"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Evaluating",
+            "rationale": "Ang mga seremonya ay social technologies upang mapanatili ang kooperasyon kaysa kompetisyon."
+          },
+          {
+            "question": "Gaano kahalaga ang konsepto ng 'Ilaya' at 'Ilawod' sa pag-unawa sa ating kasaysayan bago ang kolonyalismo?",
+            "options": [
+              "Hindi ito mahalaga dahil wala naman silang impluwensya sa atin",
+              "Ipinapakita nito na may organisadong sistema na ng kalakalan at ugnayan ang mga Filipino",
+              "Ipinapakita nito na tayo ay mga watak-watak na grupo na walang ugnayan",
+              "Ipinapakita nito na ang mga Filipino noon ay nakadepende lamang sa ibang bansa"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Evaluating",
+            "rationale": "Ang sistemang ito ay patunay na bago dumating ang mga Kastila, mayroon na tayong maunlad na ugnayang pang-ekonomiya at panlipunan."
+          },
+          {
+            "question": "Kung susuriin ang sistemang 'Binatuan', bakit ito mas epektibo kaysa sa sistemang pagbabayad ng cash sa isang lipunang walang sentralisadong pamahalaan?",
+            "options": [
+              "Dahil mas gusto ng mga sinaunang tao ang utang kaysa cash",
+              "Dahil pinapatibay nito ang pagkakaisa at pananagutan sa bawat miyembro ng komunidad",
+              "Dahil wala silang konsepto ng pera noon",
+              "Dahil mas madali itong subaybayan ng mga pinuno"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Evaluating",
+            "rationale": "Sa kawalan ng pera, ang social capital (tiwala) ang nagsisilbing pera, kaya mas matibay ang pagkakaisa."
+          },
+          {
+            "question": "Bakit mahalagang pag-aralan ang mga katutubong pamamaraan ng ugnayan gaya ng Ilaya at Ilawod sa pagbuo ng ating pambansang identidad?",
+            "options": [
+              "Upang makapagyabang sa ibang bansa tungkol sa ating kasaysayan",
+              "Upang maunawaan ang ating kakayahan na magkaisa at makipagpalitan batay sa paggalang at tiwala",
+              "Upang gayahin ang mga sinaunang paraan at talikuran ang modernong teknolohiya",
+              "Upang malaman kung aling grupo ang mas nakakaangat noon"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Evaluating",
+            "rationale": "Ang pag-unawa sa ating kasaysayan ay mahalaga upang makita ang mga ugat ng ating kultura ng pagtutulungan at bayanihan."
+          }
+        ]
+      },
+      "category": "A"
+    },
+    {
+      "competency": "Nasusuri ang umiiral na paniniwala at pananampalataya ng kalinangang Pilipino",
+      "questions": {
+        "identified_competency_level": "Analyzing",
+        "assessment_items": [
+          {
+            "question": "Ano ang pangunahing kahulugan ng 'ginhawa' sa pananaw ng mga sinaunang Pilipino?",
+            "options": [
+              "Kayamanan at materyal na ari-arian",
+              "Hininga o puwersa ng buhay",
+              "Kawalan ng anumang sakit sa katawan",
+              "Kaginhawaan sa buhay matapos ang pagtatrabaho"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Remembering",
+            "rationale": "Ang ginhawa sa sinaunang pananaw ay tumutukoy sa 'life force' o hininga ng tao."
+          },
+          {
+            "question": "Alin sa mga sumusunod ang nagsisilbing simbolo ng tapang at proteksiyon sa mga sinaunang Pilipino?",
+            "options": [
+              "Manunggul Jar",
+              "Kalasag",
+              "Anting-anting",
+              "Banga"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Remembering",
+            "rationale": "Ang anting-anting ay pinaniniwalaang nagbibigay ng proteksiyon laban sa masamang espiritu."
+          },
+          {
+            "question": "Ano ang ipinahihiwatig ng paglalagay ng mga 'pabaon' sa libingan ng mga sinaunang Pilipino?",
+            "options": [
+              "Bilang palamuti sa libingan ng yumao",
+              "Paraan ng pagpapakita ng yaman ng pamilya",
+              "Paniniwalang kailangan ito ng kaluluwa sa paglalakbay sa kabilang-buhay",
+              "Upang hindi na bumalik ang kaluluwa sa mundo ng mga buhay"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Understanding",
+            "rationale": "Ang pabaon ay bahagi ng ritwal na nagpapakita ng paniniwala sa pagpapatuloy ng buhay pagkatapos ng kamatayan."
+          },
+          {
+            "question": "Bakit itinuturing na mahalagang ebidensya ang Manunggul Jar tungkol sa paniniwala ng mga sinaunang Pilipino?",
+            "options": [
+              "Dahil ito ay yari sa ginto",
+              "Dahil ipinapakita nito ang paglalakbay ng kaluluwa patungo sa kabilang-buhay",
+              "Dahil ito ang pinakamatandang kagamitang panluto",
+              "Dahil ito ay ginagamit sa pakikipagkalakalan sa ibang bansa"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Understanding",
+            "rationale": "Ang disenyo ng Manunggul Jar, partikular ang bangka, ay sumisimbolo sa paglalakbay ng kaluluwa."
+          },
+          {
+            "question": "Paano ipinapakita ng mga sinaunang Pilipino ang kanilang paggalang sa mga yumao?",
+            "options": [
+              "Sa pamamagitan ng pag-aalay at pagpapanatili ng ugnayan sa mga anito",
+              "Sa pamamagitan ng paglimot sa nakaraan ng yumao",
+              "Sa pamamagitan ng pagtatapon ng gamit ng namatay",
+              "Sa pamamagitan ng pagpapatayo ng malalaking gusali"
+            ],
+            "answer_index": 0,
+            "cognitive_level": "Understanding",
+            "rationale": "Ang pag-aalay at paniniwala sa anito ay bahagi ng paggalang sa mga ninuno."
+          },
+          {
+            "question": "Ang pagkakaroon ng anting-anting ay nagpapakita ng anong pagpapahalaga sa lipunang barangay?",
+            "options": [
+              "Paghahangad na maging pinuno",
+              "Pagpapahalaga sa pisikal na kaligtasan at buhay",
+              "Pagkakaroon ng interes sa mga hiyas",
+              "Pagkakaroon ng tiwala sa ibang tao"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Understanding",
+            "rationale": "Ang anting-anting ay simbolo ng pag-iingat sa buhay na pinahahalagahan ng mga sinaunang Pilipino."
+          },
+          {
+            "question": "Kung ang isang mandirigma ay may suot na anting-anting, paano ito makakaapekto sa kanyang kilos sa labanan?",
+            "options": [
+              "Magiging maingat siya at hindi na lalaban",
+              "Magkakaroon siya ng lakas ng loob at kumpiyansa sa harap ng panganib",
+              "Aasa na lamang siya sa swerte at hindi na magsasanay",
+              "Iisipin niyang hindi siya maaaring sugatan kaya hindi na siya magtatago"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Applying",
+            "rationale": "Ang paniniwala sa proteksiyon ng anting-anting ay nagbibigay ng sikolohikal na lakas sa tao."
+          },
+          {
+            "question": "Paano mo uugnayin ang paniniwala sa kabilang-buhay sa araw-araw na pamumuhay ng mga sinaunang Pilipino?",
+            "options": [
+              "Dahil sa paniniwalang ito, naging pabaya sila sa kanilang kalusugan",
+              "Dahil sa paniniwalang ito, naging maingat sila sa paggawa ng mga ritwal at paggalang sa kalikasan",
+              "Dahil sa paniniwalang ito, tumigil sila sa pagsasaka",
+              "Dahil sa paniniwalang ito, wala silang pakialam sa kanilang mga ninuno"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Applying",
+            "rationale": "Ang paniniwala sa kabilang-buhay ay nagdidikta ng disiplina at paggalang sa mga nakatatanda at kalikasan."
+          },
+          {
+            "question": "Paano naiiba ang konsepto ng kamatayan ng mga sinaunang Pilipino sa modernong pananaw ngayon?",
+            "options": [
+              "Ang mga sinaunang Pilipino ay walang takot sa kamatayan",
+              "Ang mga sinaunang Pilipino ay naniniwala sa pagpapatuloy ng ugnayan sa pagitan ng buhay at patay",
+              "Ang modernong pananaw ay mas nakatuon sa ritwal kaysa sa sinaunang panahon",
+              "Walang pagkakaiba ang dalawang pananaw"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Analyzing",
+            "rationale": "Sinaunang pananaw: ugnayan ng buhay at patay; Moderno: mas nakatuon sa pisikal na pagtatapos."
+          },
+          {
+            "question": "Ano ang implikasyon ng paggamit ng Manunggul Jar sa pag-unawa sa kalinangang Pilipino?",
+            "options": [
+              "Ito ay patunay ng mataas na antas ng sining at pananampalataya",
+              "Ito ay nagpapakita na ang mga Pilipino ay mahilig sa banga",
+              "Ito ay nagpapakita ng kawalan ng koneksyon sa mga dayuhan",
+              "Ito ay simpleng gamit lamang at walang malalim na kahulugan"
+            ],
+            "answer_index": 0,
+            "cognitive_level": "Analyzing",
+            "rationale": "Ang Manunggul Jar ay simbolo ng komplikadong pananaw ng mga ninuno sa buhay at kamatayan."
+          },
+          {
+            "question": "Paano nasasalamin ng mga ritwal sa paglilibing ang pagpapahalaga ng lipunang barangay sa indibidwal?",
+            "options": [
+              "Ipinapakita nito na ang tao ay walang halaga pagkatapos mamatay",
+              "Ipinapakita nito na mahalaga ang pagpapatuloy ng dignidad ng tao kahit siya ay pumanaw na",
+              "Ipinapakita nito na ang libing ay para lamang sa mga mahihirap",
+              "Ipinapakita nito na ang lipunan ay walang interes sa relihiyon"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Analyzing",
+            "rationale": "Ang maayos na ritwal ay nagpapakita ng mataas na pagpapahalaga sa dignidad ng tao."
+          },
+          {
+            "question": "Sa iyong pagsusuri, bakit itinuturing na mahalaga ang konsepto ng 'ginhawa' sa pagbuo ng katatagan ng mga sinaunang Pilipino?",
+            "options": [
+              "Dahil ito ang basehan ng kanilang pagiging matapang at positibo",
+              "Dahil ito ay ginagamit na pambayad sa buwis",
+              "Dahil ito ang nagtatakda kung sino ang magiging datu",
+              "Dahil ito ay para lamang sa mga taong walang sakit"
+            ],
+            "answer_index": 0,
+            "cognitive_level": "Evaluating",
+            "rationale": "Ang paniniwalang ang tao ay may 'hininga' o 'ginhawa' mula sa mas mataas na puwersa ang nagbibigay ng tiwala sa sarili."
+          },
+          {
+            "question": "Paano mo bibigyang-katwiran ang kahalagahan ng mga sinaunang ritwal sa pagpapanatili ng kaayusan sa lipunang barangay?",
+            "options": [
+              "Ang mga ritwal ay walang kinalaman sa kaayusan",
+              "Ang mga ritwal ay nagsilbing tali na nagbubuklod sa mga tao sa kanilang paniniwala at tradisyon",
+              "Ang mga ritwal ay nagdudulot ng gulo sa barangay",
+              "Ang mga ritwal ay para lamang sa mga taong gustong magpakitang-gilas"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Evaluating",
+            "rationale": "Ang mga ritwal ay nagpapatibay ng pagkakakilanlan at pagkakaisa ng mga miyembro ng lipunan."
+          },
+          {
+            "question": "Bakit masasabing ang paniniwala sa kabilang-buhay ay isang salamin ng pagpapahalaga sa dignidad ng buhay?",
+            "options": [
+              "Dahil kung ang buhay ay mahalaga, ang paglalakbay ng kaluluwa ay nararapat na bigyang-halaga rin",
+              "Dahil ang paghahanda sa libing ay mahalaga upang makatipid sa gastusin",
+              "Dahil ang mga sinaunang Pilipino ay takot mamatay",
+              "Dahil ang kamatayan ay itinuturing na pagtatapos ng lahat ng bagay"
+            ],
+            "answer_index": 0,
+            "cognitive_level": "Evaluating",
+            "rationale": "Ang pagkilala sa halaga ng buhay ay umaabot hanggang sa kabilang-buhay sa kanilang pananaw."
+          }
+        ]
+      },
+      "category": "A"
+    }
+  ]
+}

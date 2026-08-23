@@ -1,0 +1,268 @@
+{
+  "exportType": "full_assessment",
+  "subject": "Introduction to Philosophy of the Human Person",
+  "category": "A",
+  "generatedAt": "2024-03-20T00:00:00.000Z",
+  "data": [
+    {
+      "competency": "Distinguish opinion from truth",
+      "notes": "Analyze statements and identify if they are facts or opinions.",
+      "hours": 1,
+      "questions": {
+        "identified_competency_level": "Evaluating",
+        "questions": [
+          {
+            "cognitive_level": "Remembering",
+            "question": "Which of the following best defines a statement of truth?",
+            "options": [
+              "A personal belief that cannot be proven.",
+              "A claim that is supported by objective evidence and reality.",
+              "A subjective preference based on individual feelings.",
+              "A guess about the future that may or may not happen."
+            ],
+            "answer_index": 1,
+            "rationale": "Truth is characterized by its correspondence to objective reality and empirical evidence, whereas the other options describe opinions or conjectures."
+          },
+          {
+            "cognitive_level": "Remembering",
+            "question": "What is the primary characteristic of an opinion?",
+            "options": [
+              "It is universally accepted by all people.",
+              "It can be verified through scientific experimentation.",
+              "It is a subjective belief that lacks definitive proof.",
+              "It is a factual account of historical events."
+            ],
+            "answer_index": 2,
+            "rationale": "Opinions are inherently subjective; they represent individual perspectives or beliefs rather than objectively verifiable facts."
+          },
+          {
+            "cognitive_level": "Understanding",
+            "question": "Why is the statement 'The weather is uncomfortable today' classified as an opinion?",
+            "options": [
+              "Because it is a scientific observation about humidity.",
+              "Because it relies on the speaker's personal feeling rather than a universal standard.",
+              "Because it is a historical fact that cannot be changed.",
+              "Because it provides data that can be measured by a thermometer."
+            ],
+            "answer_index": 1,
+            "rationale": "Comfort is subjective; what one person finds uncomfortable, another might find pleasant. It lacks a universal standard of measurement."
+          },
+          {
+            "cognitive_level": "Understanding",
+            "question": "Which of the following statements serves as a clear example of a fact?",
+            "options": [
+              "Water freezes at 0 degrees Celsius at sea level.",
+              "Vanilla is the best flavor of ice cream.",
+              "Math is the most difficult subject to study.",
+              "The government should lower taxes for everyone."
+            ],
+            "answer_index": 0,
+            "rationale": "The freezing point of water is a constant, verifiable, and empirical reality, making it a factual statement."
+          },
+          {
+            "cognitive_level": "Applying",
+            "question": "A student claims, 'The school cafeteria serves the best pizza.' How should this be categorized?",
+            "options": [
+              "As a truth, because the student has tasted it.",
+              "As an opinion, because 'best' is a value judgment that varies by taste.",
+              "As a fact, because the school provides the pizza.",
+              "As an error, because pizza quality is non-existent."
+            ],
+            "answer_index": 1,
+            "rationale": "Value-laden words like 'best' indicate personal preference rather than objective truth, categorizing the statement as an opinion."
+          },
+          {
+            "cognitive_level": "Applying",
+            "question": "Which of the following scenarios demonstrates the application of distinguishing truth from opinion?",
+            "options": [
+              "Accepting everything a politician says as truth.",
+              "Ignoring all opinions and focusing only on reading books.",
+              "Validating a claim by checking if it is supported by empirical evidence or consensus.",
+              "Believing that all opinions are equally valid regardless of evidence."
+            ],
+            "answer_index": 2,
+            "rationale": "Distinguishing truth involves the practical step of seeking verification and evidence to validate a claim."
+          },
+          {
+            "cognitive_level": "Analyzing",
+            "question": "How can you distinguish a factual statement from an opinion in a news report?",
+            "options": [
+              "Facts use emotional language, while opinions use neutral language.",
+              "Facts are verifiable through multiple reliable sources, while opinions reflect the author's bias.",
+              "Facts are always written by older people, while opinions are written by younger people.",
+              "Facts are always longer than opinions."
+            ],
+            "answer_index": 1,
+            "rationale": "Verification through evidence and the absence of subjective bias are the core analytical tools used to separate facts from opinions."
+          },
+          {
+            "cognitive_level": "Analyzing",
+            "question": "Analyze the following statements and identify which one is a factual claim.",
+            "options": [
+              "The Philippines is an archipelago.",
+              "Filipino people are the most hospitable in the world.",
+              "It is wrong to criticize government policies.",
+              "Living in the province is better than living in the city."
+            ],
+            "answer_index": 0,
+            "rationale": "The geographical status of the Philippines is a verifiable, objective reality, whereas the other options are subjective values or cultural interpretations."
+          },
+          {
+            "cognitive_level": "Evaluating",
+            "question": "Why is it important to evaluate whether a statement is an opinion or a truth before accepting it as 'fact'?",
+            "options": [
+              "To ensure that we only agree with people we like.",
+              "To minimize the risk of being misled by misinformation or subjective biases.",
+              "To make sure we can win every argument we have with others.",
+              "To prioritize our own opinions over everyone else's."
+            ],
+            "answer_index": 1,
+            "rationale": "The critical evaluation of claims is necessary for intellectual integrity and to ensure one's knowledge base is grounded in reality."
+          },
+          {
+            "cognitive_level": "Evaluating",
+            "question": "Evaluate the following argument: 'The movie was boring because it lasted three hours.' Is this a statement of truth?",
+            "options": [
+              "Yes, because the duration of the movie is a factual, measurable, and verifiable truth.",
+              "No, because the judgment of 'boring' is a subjective opinion, even if it is linked to a fact.",
+              "Yes, because movie duration is a universally accepted standard for quality.",
+              "No, because movies cannot be measured by time."
+            ],
+            "answer_index": 1,
+            "rationale": "While the duration (3 hours) is a fact, the conclusion (it is boring) is an interpretation. Thus, the statement as a whole is an opinion based on a personal response to a fact."
+          }
+        ]
+      }
+    },
+    {
+      "competency": "Realize that the methods of philosophy lead to  wisdom and truth",
+      "notes": "Explore branches like Epistemology and methods like Socratic inquiry.",
+      "hours": 1,
+      "questions": {
+        "identified_competency_level": "Evaluating",
+        "questions": [
+          {
+            "question": "Which of the following describes the Socratic method of seeking truth?",
+            "options": [
+              "Memorizing established dogmas to avoid error",
+              "Engaging in dialogue through questioning to reach clarity",
+              "Using mathematical proofs to verify sensory perception",
+              "Accepting the traditions of the elders without question"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Remembering",
+            "rationale": "The Socratic method is fundamentally defined by the use of critical questioning to challenge assumptions and arrive at truth, which is a foundational concept in the study of philosophy."
+          },
+          {
+            "question": "What is the primary function of epistemology in the pursuit of wisdom?",
+            "options": [
+              "To study the nature of moral actions",
+              "To explore the nature of beauty and art",
+              "To examine the nature, origin, and limits of human knowledge",
+              "To provide a framework for political governance"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Remembering",
+            "rationale": "Epistemology is the branch of philosophy concerned with how we know what we know, making it essential for the systematic pursuit of truth."
+          },
+          {
+            "question": "In Plato’s 'Allegory of the Cave', what do the shadows on the wall represent?",
+            "options": [
+              "The ultimate truth of the cosmos",
+              "The subjective and often flawed human perception of reality",
+              "The divine wisdom granted to the enlightened",
+              "The physical objects we touch in our daily lives"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Understanding",
+            "rationale": "The shadows represent the illusions or mere appearances that people mistake for reality, illustrating the difference between sensory perception and true knowledge."
+          },
+          {
+            "question": "Why did Socrates claim that 'an unexamined life is a life not worth living'?",
+            "options": [
+              "Because intellectual activity is the only path to physical survival",
+              "Because humans are defined strictly by their social status",
+              "Because reflection is necessary to fulfill one's potential as a rational being",
+              "Because unexamined lives inevitably lead to political success"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Understanding",
+            "rationale": "Socrates emphasized that humans have a duty to critically reflect on their values and beliefs to live a meaningful, virtuous, and truly human life."
+          },
+          {
+            "question": "What does Socrates suggest through his 'Three Sieves' test?",
+            "options": [
+              "To accept information only from those in positions of power",
+              "To filter communication through truth, goodness, and necessity before speaking",
+              "To prioritize personal opinion over communal agreement",
+              "To avoid all speech to prevent conflict"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Understanding",
+            "rationale": "The Three Sieves act as a pedagogical tool to demonstrate how critical filtering and wisdom lead to more truthful and ethical communication."
+          },
+          {
+            "question": "How does Rene Descartes’ method of 'Cartesian Doubt' function as a tool for finding truth?",
+            "options": [
+              "By accepting the authority of established traditions",
+              "By systematically rejecting any belief that can be doubted to reach a foundational certainty",
+              "By ignoring all sensory data to focus only on emotions",
+              "By trusting all initial perceptions as inherently correct"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Applying",
+            "rationale": "Descartes used methodological skepticism to clear away false beliefs, seeking an indubitable foundation for knowledge."
+          },
+          {
+            "question": "When an individual encounters a rumor, how might they apply the 'Three Sieves' of Socrates to demonstrate wisdom?",
+            "options": [
+              "Share the information quickly to ensure everyone is warned",
+              "Ask if the information is true, good, and useful before passing it on",
+              "Ignore the rumor entirely and focus only on scientific facts",
+              "Believe the rumor because it is popular and widely shared"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Applying",
+            "rationale": "The application of the three sieves requires the individual to actively evaluate information for truth, goodness, and utility, promoting wisdom in daily interaction."
+          },
+          {
+            "question": "How does the 'Allegory of the Cave' relate to the contemporary problem of 'fake news' or misinformation?",
+            "options": [
+              "It encourages us to ignore all media because it is all false",
+              "It suggests that society is often content with comfortable illusions rather than seeking the labor of uncovering the truth",
+              "It proves that the government is the only source of objective reality",
+              "It implies that sensory reality is the only thing that matters"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Analyzing",
+            "rationale": "The allegory highlights the human tendency to mistake manufactured or superficial narratives (the shadows) for reality, reflecting the modern challenge of distinguishing misinformation from truth."
+          },
+          {
+            "question": "What is the primary philosophical connection between Descartes' doubt and the Socratic method?",
+            "options": [
+              "Both encourage the blind acceptance of traditional authorities",
+              "Both rely on the active, critical questioning of assumptions to achieve intellectual clarity",
+              "Both argue that truth is impossible to attain for human beings",
+              "Both prioritize empirical observation over logical reasoning"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Analyzing",
+            "rationale": "Both methods require the practitioner to dismantle preconceived notions, illustrating that wisdom is not inherent but is the result of a rigorous, critical process."
+          },
+          {
+            "question": "To what extent is the 'examined life' a prerequisite for the attainment of truth and wisdom?",
+            "options": [
+              "The examined life is unnecessary because truth is biologically inherited",
+              "The examined life is a burden that prevents people from attaining happiness",
+              "The examined life is fundamental, as it allows one to discern reality from mere opinion through self-reflection and inquiry",
+              "The examined life is only for philosophers and irrelevant to the general public"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Evaluating",
+            "rationale": "Evaluating the examined life shows that wisdom is not passive; it requires the intellectual rigor to identify personal biases and cognitive traps, thereby validating the competency that philosophy leads to truth."
+          }
+        ]
+      }
+    }
+  ]
+}

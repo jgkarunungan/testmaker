@@ -1,0 +1,398 @@
+{
+  "exportType": "full_assessment",
+  "subject": "Introduction to Philosophy of the Human Person",
+  "category": "B",
+  "generatedAt": "2024-03-20T00:00:00.000Z",
+  "data": [
+    {
+      "competency": "Distinguish opinion from truth",
+      "notes": "Analyze statements and identify if they are facts or opinions.",
+      "hours": 1,
+      "questions": {
+        "identified_competency_level": "Analyzing",
+        "questions": [
+          {
+            "question": "Which of the following best defines a 'truth' in philosophy?",
+            "options": [
+              "A personal feeling about a certain situation.",
+              "A statement that is supported by factual evidence and can be verified.",
+              "An idea that is popular among a large group of people.",
+              "A suggestion that might be true in the future."
+            ],
+            "answer_index": 1,
+            "rationale": "Truth is characterized by its verifiability and grounding in objective reality, as opposed to subjective opinion.",
+            "cognitive_level": "Remembering"
+          },
+          {
+            "question": "What is the primary characteristic of an 'opinion'?",
+            "options": [
+              "It is universally accepted by all scientists.",
+              "It is based on objective observation.",
+              "It reflects personal beliefs, feelings, or interpretations.",
+              "It remains the same regardless of who says it."
+            ],
+            "answer_index": 2,
+            "rationale": "Opinions are subjective expressions of an individual's perspective and do not necessarily represent objective facts.",
+            "cognitive_level": "Remembering"
+          },
+          {
+            "question": "Which of these is considered a 'fact'?",
+            "options": [
+              "The Philippines is an archipelago.",
+              "Adobo is the most delicious dish in the world.",
+              "Learning philosophy is boring.",
+              "Summer is the best season of the year."
+            ],
+            "answer_index": 0,
+            "rationale": "The statement about the Philippines is a geographical fact that can be verified through maps and data.",
+            "cognitive_level": "Understanding"
+          },
+          {
+            "question": "Why is the statement 'Blue is the prettiest color' classified as an opinion?",
+            "options": [
+              "Because it is supported by color theory.",
+              "Because it is a personal preference that cannot be proven true or false for everyone.",
+              "Because it can be measured using scientific instruments.",
+              "Because it is a rule in art schools."
+            ],
+            "answer_index": 1,
+            "rationale": "Aesthetic preferences are subjective and vary from person to person, making them opinions rather than objective truths.",
+            "cognitive_level": "Understanding"
+          },
+          {
+            "question": "Which of the following statements is a fact?",
+            "options": [
+              "It is a hot day today.",
+              "The sun rises in the east.",
+              "English is a difficult language to learn.",
+              "Chocolate ice cream is better than vanilla."
+            ],
+            "answer_index": 1,
+            "rationale": "The rotation of the Earth resulting in the sun rising in the east is a scientifically verifiable natural phenomenon.",
+            "cognitive_level": "Understanding"
+          },
+          {
+            "question": "If someone says, 'This coffee tastes bitter,' how should we categorize this statement?",
+            "options": [
+              "As a truth, because the person said it.",
+              "As an opinion, because taste is subjective to the individual's sensory experience.",
+              "As a fact, because coffee contains caffeine.",
+              "As a lie, because some people like bitter coffee."
+            ],
+            "answer_index": 1,
+            "rationale": "Sensory experiences like taste are personal perceptions and do not constitute objective truth for everyone.",
+            "cognitive_level": "Applying"
+          },
+          {
+            "question": "Identify which of the following is an example of an opinion.",
+            "options": [
+              "Water boils at 100 degrees Celsius at sea level.",
+              "The human heart pumps blood throughout the body.",
+              "Playing video games is a waste of time.",
+              "Humans require oxygen to survive."
+            ],
+            "answer_index": 2,
+            "rationale": "The utility or value of a hobby is a matter of personal judgment and values, not a verifiable fact.",
+            "cognitive_level": "Applying"
+          },
+          {
+            "question": "Analyze the following statements and identify the factual one:",
+            "options": [
+              "Math is the most important subject in school.",
+              "The Earth revolves around the Sun.",
+              "Students are happier when they have shorter classes.",
+              "Online shopping is more convenient than going to the mall."
+            ],
+            "answer_index": 1,
+            "rationale": "The heliocentric model of the solar system is an established scientific fact.",
+            "cognitive_level": "Analyzing"
+          },
+          {
+            "question": "How can you distinguish a fact from an opinion when reading a news article?",
+            "options": [
+              "By counting how many adjectives the author uses.",
+              "By checking if the claim can be proven with evidence or data.",
+              "By believing whatever the headline says.",
+              "By seeing how many people commented on the article."
+            ],
+            "answer_index": 1,
+            "rationale": "Fact-checking requires looking for evidence and objective data rather than relying on emotional language or popularity.",
+            "cognitive_level": "Analyzing"
+          },
+          {
+            "question": "Evaluate the following statement: 'Honesty is the best policy.' Is this a fact or an opinion?",
+            "options": [
+              "It is a fact because everyone knows it.",
+              "It is an opinion because it expresses a moral value or guideline for behavior, not a scientific certainty.",
+              "It is a fact because it is written in books.",
+              "It is neither; it is a mathematical equation."
+            ],
+            "answer_index": 1,
+            "rationale": "Moral judgments and philosophical guidelines for living are based on values, which are subjective opinions rather than empirical facts.",
+            "cognitive_level": "Evaluating"
+          }
+        ]
+      }
+    },
+    {
+      "competency": "Realize that the methods of philosophy lead to  wisdom and truth",
+      "notes": "Explore branches like Epistemology and methods like Socratic inquiry.",
+      "hours": 1,
+      "questions": {
+        "identified_competency_level": "Evaluating",
+        "questions": [
+          {
+            "question": "Which branch of philosophy is primarily concerned with the study of knowledge and how we distinguish truth from belief?",
+            "options": [
+              "Ethics",
+              "Epistemology",
+              "Metaphysics",
+              "Aesthetics"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Remembering",
+            "rationale": "Epistemology is defined as the theory of knowledge, specifically dealing with the nature and scope of knowledge and truth."
+          },
+          {
+            "question": "In the Socratic method, what is the primary goal of asking probing questions to another person?",
+            "options": [
+              "To confuse the listener",
+              "To win an argument",
+              "To uncover deeper truth and clarify ideas",
+              "To prove the teacher is more intelligent"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Remembering",
+            "rationale": "The Socratic method uses dialectic inquiry to expose contradictions in thought and arrive at a more refined understanding."
+          },
+          {
+            "question": "What does the phrase 'an unexamined life is a life not worth living' imply about the search for wisdom?",
+            "options": [
+              "People should avoid thinking too much to remain happy.",
+              "Living without reflecting on one's values and truth hinders true human potential.",
+              "One must be a professional philosopher to have a good life.",
+              "Examination of life is only necessary when one faces a major crisis."
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Understanding",
+            "rationale": "Socrates suggests that reflection and questioning are essential to the human experience and the pursuit of wisdom."
+          },
+          {
+            "question": "In Plato's Allegory of the Cave, what do the 'shadows' on the wall represent to the prisoners?",
+            "options": [
+              "The ultimate truth of the universe",
+              "The shadows of their own bodies",
+              "Illusions and superficial appearances of reality",
+              "The light of the sun"
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Understanding",
+            "rationale": "Plato used the cave allegory to illustrate how society often confuses sensory perceptions (shadows) with actual truth."
+          },
+          {
+            "question": "Which of the following best describes Rene Descartes' method of 'Cartesian doubt'?",
+            "options": [
+              "Accepting everything taught by authorities without question.",
+              "Rejecting any belief that can be doubted to find a foundation of absolute certainty.",
+              "Forgetting all past knowledge to live a life of ignorance.",
+              "Trusting only what one's eyes see clearly."
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Understanding",
+            "rationale": "Descartes believed that by doubting everything uncertain, one could arrive at an indubitable truth (the Cogito)."
+          },
+          {
+            "question": "Socrates' 'Three Sieves' test requires that before we speak, our words must pass through filters of truth, goodness, and usefulness. If a piece of information is true but not good or useful, what should one do?",
+            "options": [
+              "Share it because it is true.",
+              "Refrain from sharing it.",
+              "Ask someone else to share it.",
+              "Only share it if it makes the listener angry."
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Applying",
+            "rationale": "The Three Sieves suggests that wisdom involves discernment; if information is not helpful or kind, it fails the test of wisdom even if true."
+          },
+          {
+            "question": "How does Descartes' method of doubt function as a tool for a student searching for truth today?",
+            "options": [
+              "It encourages students to ignore their teachers.",
+              "It helps students critically evaluate information before accepting it as fact.",
+              "It teaches students that nothing can ever be truly known.",
+              "It forces students to memorize philosophical definitions."
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Applying",
+            "rationale": "Applying Cartesian doubt means not accepting claims blindly, which is a practical skill for modern information literacy."
+          },
+          {
+            "question": "Why does Plato suggest that the prisoner who escapes the cave and sees the sun has a duty to return?",
+            "options": [
+              "To show off his new knowledge.",
+              "Because he is forced by his captors.",
+              "To enlighten others about the true nature of reality.",
+              "Because he finds the outside world too lonely."
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Analyzing",
+            "rationale": "The allegory highlights the philosopher's responsibility to share the truth discovered through reasoning with the rest of society."
+          },
+          {
+            "question": "Which statement best connects the methods of philosophy to the attainment of wisdom?",
+            "options": [
+              "Philosophy relies on luck to find the truth.",
+              "The rigorous questioning in philosophy transforms mere opinion into examined knowledge.",
+              "Philosophy is just about memorizing the theories of famous men.",
+              "Truth is discovered by following the majority opinion in society."
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Analyzing",
+            "rationale": "Philosophy uses logical processes to move from subjective opinion to objective, reasoned understanding (wisdom)."
+          },
+          {
+            "question": "Evaluate the following: Why is a person who refuses to question their own beliefs unlikely to reach the 'truth' according to the Socratic tradition?",
+            "options": [
+              "Because truth is found by listening to the loudest person in the room.",
+              "Because unexamined beliefs are often based on untested assumptions and biases.",
+              "Because questioning is only for students, not for adults.",
+              "Because truth is a secret that only ancient philosophers possessed."
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Evaluating",
+            "rationale": "Socratic tradition posits that truth requires active inquiry; avoiding self-reflection leaves one trapped in potential falsehoods or cultural biases."
+          }
+        ]
+      }
+    },
+    {
+      "competency": "Evaluate truth from opinions in different situations using the methods of philosophizing",
+      "notes": "Identify logical fallacies and distinguish subjective opinions from objective facts.",
+      "hours": 1,
+      "questions": {
+        "identified_competency_level": "Evaluating",
+        "questions": [
+          {
+            "question": "Which of the following refers to a statement that is based on personal beliefs, feelings, or preferences rather than objective evidence?",
+            "options": [
+              "Fact",
+              "Opinion",
+              "Truth",
+              "Evidence"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Remembering",
+            "rationale": "An opinion is defined by its subjective nature, representing personal perspective rather than established fact."
+          },
+          {
+            "question": "What is the primary characteristic of a 'Fact' in the context of philosophy?",
+            "options": [
+              "It is always supported by someone's feelings.",
+              "It can be verified as true or false through objective evidence.",
+              "It is a belief held by a large group of people.",
+              "It is something that can never be proven wrong."
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Remembering",
+            "rationale": "Facts are distinguished from opinions by their verifiable, objective nature."
+          },
+          {
+            "question": "Which of these statements is a clear example of an opinion?",
+            "options": [
+              "The Earth revolves around the Sun.",
+              "Water boils at 100 degrees Celsius at sea level.",
+              "Vanilla ice cream is the best flavor for everyone.",
+              "Humans require oxygen to survive."
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Understanding",
+            "rationale": "Preferences like 'best flavor' are subjective and cannot be proven as universal truths."
+          },
+          {
+            "question": "What does it mean to 'evaluate truth' from opinions in a conversation?",
+            "options": [
+              "To accept everything a person says as truth.",
+              "To ignore what the other person is saying.",
+              "To determine if a statement is based on verifiable facts or personal biases.",
+              "To change the topic to something more agreeable."
+            ],
+            "answer_index": 2,
+            "cognitive_level": "Understanding",
+            "rationale": "Evaluating truth involves discerning the source and validity of information presented in communication."
+          },
+          {
+            "question": "Which fallacy occurs when someone attacks the person making an argument rather than addressing the argument itself?",
+            "options": [
+              "Ad Hominem",
+              "Appeal to Authority",
+              "False Dilemma",
+              "Bandwagon"
+            ],
+            "answer_index": 0,
+            "cognitive_level": "Understanding",
+            "rationale": "Ad Hominem is a logical fallacy where the character of the opponent is attacked to invalidate their argument."
+          },
+          {
+            "question": "If someone says, 'Everyone in school is wearing these sneakers, so they must be the best shoes to buy,' which fallacy are they using?",
+            "options": [
+              "Ad Hominem",
+              "Bandwagon",
+              "Appeal to Pity",
+              "Equivocation"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Applying",
+            "rationale": "The Bandwagon fallacy relies on the idea that something is correct because it is popular."
+          },
+          {
+            "question": "Identify the logical flaw in the statement: 'You should believe my business plan is perfect because I am a very successful person.'",
+            "options": [
+              "False Cause",
+              "Appeal to Authority",
+              "Hasty Generalization",
+              "Circular Reasoning"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Analyzing",
+            "rationale": "This is an appeal to authority (specifically, a questionable one) as the speaker uses their status to justify the quality of their plan."
+          },
+          {
+            "question": "Which of the following is a common method to identify a logical fallacy in a statement?",
+            "options": [
+              "Checking if the conclusion follows logically from the premises provided.",
+              "Seeing if the speaker is using loud or aggressive language.",
+              "Agreeing with the speaker to maintain social harmony.",
+              "Determining if the speaker is a popular public figure."
+            ],
+            "answer_index": 0,
+            "cognitive_level": "Analyzing",
+            "rationale": "Validating an argument requires checking the internal logic and the connection between premises and conclusion."
+          },
+          {
+            "question": "How would you classify the statement, 'If we allow students to use cellphones, eventually no one will study and the school will fail'?",
+            "options": [
+              "Valid argument",
+              "Slippery Slope fallacy",
+              "Fact-based opinion",
+              "Logical deduction"
+            ],
+            "answer_index": 1,
+            "cognitive_level": "Evaluating",
+            "rationale": "The Slippery Slope fallacy assumes that a small first step will lead to a chain of related (typically negative) events without sufficient evidence."
+          },
+          {
+            "question": "When evaluating a heated discussion, which action best demonstrates the ability to distinguish truth from opinion?",
+            "options": [
+              "Categorizing claims as either verifiable facts or subjective preferences.",
+              "Accepting the opinion of the person who speaks the loudest.",
+              "Refusing to participate in the conversation entirely.",
+              "Believing only the opinions that align with your own."
+            ],
+            "answer_index": 0,
+            "cognitive_level": "Evaluating",
+            "rationale": "The core of evaluating truth lies in the ability to separate objective, evidence-based claims from subjective, personal viewpoints."
+          }
+        ]
+      }
+    }
+  ]
+}

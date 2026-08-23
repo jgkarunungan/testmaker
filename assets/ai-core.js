@@ -19,11 +19,7 @@ async function callGenerateDLP(inputs) {
  * Generates Multiple Choice Questions based on competency and notes
  */
 async function callGenerateMCQ(inputs) {
-    const { apiKey, subject, competency, notes, hours, totalExamItems, totalHours, systemPrompt, selectedModel, useFallback, category } = inputs;
-
-    // Calculate number of items for this competency based on TOS logic
-    let itemCount = Math.round((hours / totalHours) * totalExamItems);
-    if (itemCount === 0 && totalExamItems > 0 && hours > 0) itemCount = 1;
+    const { apiKey, subject, competency, notes, itemCount, totalExamItems, systemPrompt, selectedModel, useFallback, category } = inputs;
 
     // Category Distribution Logic
     const dist = category === 'B' ? 
@@ -38,28 +34,50 @@ async function callGenerateMCQ(inputs) {
         ${JSON.stringify(systemPrompt, null, 2)}
 
         LEARNING COMPETENCY: "${competency}"
-        HOURS SPENT: ${hours} hours
         TOTAL EXAM ITEMS TARGET: ${totalExamItems}
-        DISTRIBUTION RULE (TOS): Based on ${hours}/${totalHours} hours, generate exactly ${itemCount} questions for this competency.
+        DISTRIBUTION RULE (TOS): Generate exactly ${itemCount} questions for this competency.
 
         SPECIFIC AI GUIDANCE/NOTES: "${notes}"
 
-        STRICT ASSESSMENT RULES (REVISED BLOOM'S TAXONOMY):
-        1. COGNITIVE CEILING: Identify the cognitive level of the Learning Competency. Do NOT create questions that exceed this level.
-        2. SCAFFOLDING: You are expected to create questions at the identified level AND levels below it to ensure a comprehensive measure of the competency.
-        3. WEIGHTED DISTRIBUTION (CATEGORY ${category}):
+        STRICT ASSESSMENT RULES:
+        1. THE "LEARNING WHILE TESTING" PHILOSOPHY: Every question must be educational. Provide a contextual lead-in or stimulus that reminds the student of the lesson or provides relevant information before asking the question. The student should gain insight or reinforcement of the topic just by reading the item.
+        
+        2. MANDATORY STIMULUS: Every single question (LOTS and HOTS) MUST start with a stimulus (e.g., a scenario, a factual premise, a data point, or a contextual reminder). No naked questions. No labels like "Stimulus:".
+        
+        3. HIERARCHICAL STEMS: Question stems must strictly follow the Bloom's Taxonomy hierarchy. Use precise verbs corresponding to the identified cognitive level (LOTS: Remembering, Understanding, Applying; HOTS: Analyzing, Evaluating).
+        
+        4. 21st CENTURY SKILLS INTEGRATION: Every question must apply 21st-century skills (Critical Thinking, Communication, Collaboration, or Creativity). Frame items within real-world problem-solving or professional situational contexts.
+
+        5. DISTRACTOR & OPTION LOGIC (PEDAGOGICAL RIGOR):
+           - PLAUSIBILITY: All options must be highly plausible and based on documented common student misconceptions.
+           - NO GIVEAWAYS: Ensure no option is obviously wrong or "dead" (homogenous in content and grammar).
+           - UNIFORM LENGTH: Options must be nearly equal in word count.
+           - ARRANGE BY LENGTH: You MUST arrange the four options from longest (first) to shortest (last).
+           - SHUFFLE ANSWERS: The correct answer MUST NOT always be in the same position. Distribute correct answers randomly across index 0, 1, 2, and 3 (A, B, C, D) throughout the entire assessment.
+           - ANTI-BIAS RULE: For HOTS questions (Analyzing, Evaluating), the LONGEST option (index 0) must NEVER be the correct answer.
+
+        6. COGNITIVE CEILING: Do not exceed the identified level of the Learning Competency.
+        7. SCAFFOLDING & SEQUENTIAL PROGRESSION: Within this competency, generate exactly ${itemCount} items starting from LOTS (Remembering, Understanding, Applying) and progressing to the identified ceiling (Analyzing, Evaluating). Questions MUST be ordered and grouped progressively by cognitive level.
+        8. WEIGHTED DISTRIBUTION (CATEGORY ${category}):
            - EASY (${dist.easy}): Knowledge/Remembering and Understanding.
            - AVERAGE (${dist.average}): Applying and Analyzing.
            - DIFFICULT (${dist.difficult}): Evaluating.
            - NO CREATING: Do not generate "Create" level questions.
-        4. CEILING ADAPTATION: If the Competency's cognitive level is lower than a distribution tier, reallocate the percentages for higher tiers to the highest available level for this competency.
+        9. JSON STRUCTURE: You MUST return a single JSON object with the following structure:
+           {
+             "identified_competency_level": "The Bloom's level you identified",
+             "questions": [ 
+                {
+                  "question": "...",
+                  "options": ["Longest option", "Second longest", "Third longest", "Shortest option"],
+                  "answer_index": 1, // Randomly set (0-3) to match the correct text in the sorted list
+                  "cognitive_level": "...",
+                  "rationale": "..."
+                }
+             ]
+           }
         
-        5. QUESTION STEMS: Use professional stems strictly aligned with the specific Bloom's level assigned to each question.
-        6. COGNITIVE LEVEL TAGGING: For every question generated, you MUST include a "cognitive_level" field in the JSON identifying which level was used.
-        7. COMPETENCY IDENTIFICATION: You MUST also include a top-level field "identified_competency_level" in your JSON response stating the overall cognitive level you identified for the Learning Competency.
-        8. SEQUENTIAL PROGRESSION: Within this competency, questions MUST be ordered and grouped progressively by cognitive level: Remembering -> Understanding -> Applying -> Analyzing -> Evaluating.
-        9. DISTRACTOR LOGIC: Ensure all distractors are plausible, homogenous, and based on common misconceptions.
-        10. LANGUAGE RULE: Match the language of the Learning Competency and Subject. If the Subject is "Araling Panlipunan" or the text of the Competency is in Filipino, the generated questions and options MUST be in Filipino. Otherwise, use the language specified in the SYSTEM LOGIC.
+        10. LANGUAGE RULE: Match the language of the Learning Competency/Subject (Use Filipino if applicable).
 
         IMPORTANT: RETURN A JSON OBJECT OR ARRAY ONLY. NO MARKDOWN WRAPPERS. JUST THE RAW JSON TEXT matching the requested schema.`;
 
@@ -121,7 +139,8 @@ async function callRefineAssessment(inputs) {
         1. Rewrite or modify the assessment based on the user's instruction.
         2. Maintain the same JSON schema.
         3. Ensure the quality, Bloom's Taxonomy alignment, and sequential ordering rules are still followed.
-        4. LANGUAGE RULE: Maintain the language of the current assessment (Filipino or English) unless the user explicitly requests a translation in their instruction.
+        4. OPTION LENGTH & ORDERING: All options must be relatively equal in length and arranged from longest to shortest.
+        5. LANGUAGE RULE: Maintain the language of the current assessment (Filipino or English) unless the user explicitly requests a translation in their instruction.
 
         RETURN ONLY THE UPDATED JSON. NO MARKDOWN.`;
 
@@ -161,7 +180,8 @@ async function callRefineItem(inputs) {
         1. Modify this specific question based on the user's instruction.
         2. Return the updated question in the same JSON format.
         3. Maintain Bloom's Taxonomy alignment and distractor quality.
-        4. LANGUAGE RULE: Maintain the language of the current question item (Filipino or English) unless the user explicitly requests a translation in their instruction.
+        4. OPTION LENGTH & ORDERING: Ensure options are relatively equal in length and arranged from longest to shortest.
+        5. LANGUAGE RULE: Maintain the language of the current question item (Filipino or English) unless the user explicitly requests a translation in their instruction.
 
         RETURN ONLY THE UPDATED JSON OBJECT. NO MARKDOWN.`;
 

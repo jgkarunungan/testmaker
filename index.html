@@ -6,6 +6,9 @@
     <title>Gemini MCQ Architect</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="assets/ai-core.js"></script>
+    <script src="assets/app-state.js"></script>
+    <script src="assets/app-logic.js"></script>
+    <script src="assets/app-ui.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .glass {
@@ -35,7 +38,7 @@
 <body class="h-screen flex overflow-hidden">
 
     <!-- Sidebar: Subjects -->
-    <aside class="w-72 glass border-r border-slate-700 flex flex-col">
+    <aside id="sidebar" class="glass border-r border-slate-700 flex flex-col shrink-0" style="width: 288px;">
         <div class="p-6">
             <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent flex items-center gap-2">
                 <i class="fas fa-brain text-blue-400"></i>
@@ -68,6 +71,9 @@
         </div>
     </aside>
 
+    <!-- Resizer -->
+    <div id="resizer" class="w-1 cursor-col-resize bg-slate-800/50 hover:bg-blue-500/50 transition-all z-50"></div>
+
     <!-- Main Content: Competencies -->
     <main class="flex-1 flex flex-col overflow-hidden bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
         <!-- Header -->
@@ -81,6 +87,10 @@
             </div>
             <div class="flex gap-3">
                 <div class="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800">
+                    <label class="text-[10px] uppercase text-slate-500 font-bold">Exam Title</label>
+                    <input type="text" id="exam-title" value="First Periodic Test" class="bg-transparent text-blue-400 outline-none font-bold text-sm w-40 placeholder:text-slate-600">
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800">
                     <label class="text-[10px] uppercase text-slate-500 font-bold">Total Items</label>
                     <input type="number" id="total-items" value="20" class="bg-transparent text-white w-12 outline-none font-bold text-sm">
                 </div>
@@ -91,6 +101,20 @@
                         <option value="B">Leniency (B)</option>
                     </select>
                 </div>
+                <div class="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800">
+                    <label class="text-[10px] uppercase text-slate-500 font-bold">Target Test</label>
+                    <select id="exam-target" class="bg-transparent text-indigo-400 outline-none font-bold text-xs cursor-pointer">
+                        <option value="S1">Summative 1</option>
+                        <option value="S2">Summative 2</option>
+                        <option value="TERM">Term Exam (All)</option>
+                    </select>
+                </div>
+                <button onclick="triggerImportJSON()" class="px-4 py-2 glass rounded-lg hover:bg-slate-800 transition-all text-sm font-medium border-slate-700">
+                    <i class="fas fa-file-import mr-2 text-green-400"></i> Import
+                </button>
+                <button onclick="exportWorkspace()" class="px-4 py-2 glass rounded-lg hover:bg-slate-800 transition-all text-sm font-medium border-slate-700">
+                    <i class="fas fa-file-export mr-2 text-blue-400"></i> Export
+                </button>
                 <button onclick="openSystemPrompt()" class="px-4 py-2 glass rounded-lg hover:bg-slate-800 transition-all text-sm font-medium border-slate-700">
                     <i class="fas fa-code-json mr-2 text-indigo-400"></i> Fixed Prompt
                 </button>
@@ -225,7 +249,7 @@
                         <i class="fas fa-file-download mr-2"></i> Save as JSON
                     </button>
                     <button onclick="copyToClipboard()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm transition-all">
-                        <i class="fas fa-copy mr-2"></i> Copy JSON
+                        <i class="fas fa-file-alt mr-2"></i> Copy Aiken
                     </button>
                     <button onclick="closeResults()" class="px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-xl text-sm transition-all">
                         <i class="fas fa-times"></i>
@@ -381,11 +405,15 @@
 
             document.getElementById('current-subject').innerText = subject.name;
 
-            subject.competencies.forEach(comp => {
+            subject.competencies.forEach((comp, index) => {
                 const div = document.createElement('div');
                 div.className = 'glass p-6 rounded-2xl border-l-4 border-blue-500 shadow-xl relative group mb-6';
                 div.innerHTML = `
                     <div class="flex justify-between items-start mb-4">
+                        <div class="flex flex-col gap-1 mr-4">
+                            <button onclick="moveCompetency('${comp.id}', 'up')" class="text-slate-600 hover:text-blue-400 p-1"><i class="fas fa-chevron-up text-xs"></i></button>
+                            <button onclick="moveCompetency('${comp.id}', 'down')" class="text-slate-600 hover:text-blue-400 p-1"><i class="fas fa-chevron-down text-xs"></i></button>
+                        </div>
                         <div class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="md:col-span-3">
                                 <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Competency Title</label>
@@ -402,6 +430,23 @@
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
+                    
+                    <div class="mb-4 flex items-center gap-4 bg-slate-900/30 p-3 rounded-xl border border-slate-800/50">
+                        <span class="text-[10px] uppercase text-slate-500 font-bold">Include in:</span>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer">
+                            <input type="checkbox" ${comp.targetS1 ? 'checked' : ''} onchange="updateCompetency('${comp.id}', 'targetS1', this.checked)" class="rounded border-slate-700 bg-slate-950 text-blue-500">
+                            Summative 1
+                        </label>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer">
+                            <input type="checkbox" ${comp.targetS2 ? 'checked' : ''} onchange="updateCompetency('${comp.id}', 'targetS2', this.checked)" class="rounded border-slate-700 bg-slate-950 text-blue-500">
+                            Summative 2
+                        </label>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer">
+                            <input type="checkbox" ${comp.targetTerm ? 'checked' : ''} onchange="updateCompetency('${comp.id}', 'targetTerm', this.checked)" class="rounded border-slate-700 bg-slate-950 text-blue-500">
+                            Term Exam
+                        </label>
+                    </div>
+
                     <div>
                         <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 block">AI Guidance & Notes</label>
                         <textarea onchange="updateCompetency('${comp.id}', 'notes', this.value)"
@@ -484,6 +529,18 @@
         function deleteCompetency(compId) {
             const subject = state.subjects.find(s => s.id === state.currentSubjectId);
             subject.competencies = subject.competencies.filter(c => c.id !== compId);
+            saveToLocalStorage();
+            renderCompetencies();
+        }
+
+        function moveCompetency(compId, direction) {
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            const index = subject.competencies.findIndex(c => c.id === compId);
+            if (direction === 'up' && index > 0) {
+                [subject.competencies[index], subject.competencies[index - 1]] = [subject.competencies[index - 1], subject.competencies[index]];
+            } else if (direction === 'down' && index < subject.competencies.length - 1) {
+                [subject.competencies[index], subject.competencies[index + 1]] = [subject.competencies[index + 1], subject.competencies[index]];
+            }
             saveToLocalStorage();
             renderCompetencies();
         }
@@ -604,10 +661,29 @@
         }
 
         function copyToClipboard() {
-            if (lastGeneratedResults) {
-                navigator.clipboard.writeText(JSON.stringify(lastGeneratedResults, null, 2));
-                alert("Copied to clipboard!");
-            }
+            if (!lastGeneratedResults) return;
+            
+            let aikenText = "";
+            lastGeneratedResults.forEach(res => {
+                const questions = getQuestionsArray(res);
+                questions.forEach(q => {
+                    // Question text
+                    aikenText += q.question.replace(/\n/g, " ") + "\n";
+                    
+                    // Options A, B, C, D
+                    if (q.options && Array.isArray(q.options)) {
+                        q.options.forEach((opt, i) => {
+                            aikenText += String.fromCharCode(65 + i) + ". " + opt + "\n";
+                        });
+                    }
+                    
+                    // Correct Answer
+                    aikenText += "ANSWER: " + String.fromCharCode(65 + q.answer_index) + "\n\n";
+                });
+            });
+
+            navigator.clipboard.writeText(aikenText.trim());
+            alert("Copied to clipboard in Aiken Format!");
         }
 
         function closeResults() {
@@ -618,6 +694,11 @@
         function getQuestionsArray(res) {
             if (Array.isArray(res.questions)) return res.questions;
             if (typeof res.questions === 'object' && res.questions !== null) {
+                // Check common keys in different JSON versions
+                if (Array.isArray(res.questions.questions)) return res.questions.questions;
+                if (Array.isArray(res.questions.assessment_items)) return res.questions.assessment_items;
+                if (Array.isArray(res.questions.assessment)) return res.questions.assessment;
+                
                 const arrayKey = Object.keys(res.questions).find(key => Array.isArray(res.questions[key]));
                 return arrayKey ? res.questions[arrayKey] : [];
             }
@@ -629,14 +710,37 @@
             const container = document.getElementById('results-content');
             container.innerHTML = '';
 
+            const examTitle = results[0]?.examTitle || document.getElementById('exam-title').value || 'Assessment';
+            const titleElem = document.createElement('h3');
+            titleElem.className = 'text-xl font-bold text-indigo-400 mb-6 border-b border-slate-800 pb-2';
+            titleElem.innerText = examTitle;
+            container.appendChild(titleElem);
+
             let globalCounter = 1;
 
             results.forEach((res, resIdx) => {
                 const section = document.createElement('div');
-                const competencyLevel = res.questions.identified_competency_level || 'Not Identified';
+                
+                // Smart Discovery of Competency Level
+                let competencyLevel = 'Not Identified';
+                if (res.identified_competency_level) {
+                    competencyLevel = res.identified_competency_level;
+                } else if (res.questions && res.questions.identified_competency_level) {
+                    competencyLevel = res.questions.identified_competency_level;
+                } else {
+                    // Fallback: Check if any question has a level tagged
+                    const qs = getQuestionsArray(res);
+                    if (qs.length > 0 && qs[0].cognitive_level) {
+                        // Usually the ceiling is the highest level found in the scaffold
+                        const levels = ['Remembering', 'Understanding', 'Applying', 'Analyzing', 'Evaluating'];
+                        const foundLevels = qs.map(q => q.cognitive_level);
+                        const maxIndex = Math.max(...foundLevels.map(l => levels.indexOf(l)));
+                        if (maxIndex !== -1) competencyLevel = levels[maxIndex];
+                    }
+                }
                 
                 section.innerHTML = `
-                    <div class="flex justify-between items-end mb-4 mt-8 first:mt-0">
+                    <div class="flex justify-between items-end mb-2 mt-8 first:mt-0">
                         <h4 class="text-indigo-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
                             <span class="w-8 h-[1px] bg-indigo-500/30"></span>
                             ${res.competency}
@@ -645,6 +749,7 @@
                             Competency Ceiling: <span class="text-white font-bold">${competencyLevel}</span>
                         </div>
                     </div>
+                    ${res.notes ? `<p class="text-[10px] text-slate-500 mb-4 ml-10 italic">Guidance: ${res.notes}</p>` : ''}
                 `;
 
                 const questions = getQuestionsArray(res);
@@ -747,19 +852,28 @@
 
         function downloadJSON(data, filename) {
             if (!data) return;
-            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            const subjectName = data[0]?.subjectName || 'Subject';
+            const examTitle = data[0]?.examTitle || 'Assessment';
             const category = data[0]?.category || 'A';
             
-            // Generate a unique version number for this subject/category
-            const storageKey = `vcount_${state.currentSubjectId}_${category}`;
+            // Generate a unique version number
+            const storageKey = `vcount_${subjectName}_${category}`;
             let version = parseInt(localStorage.getItem(storageKey) || "1");
             
-            const name = filename || `assessment-${subject ? subject.name.replace(/\s+/g, '-') : 'export'}-Cat${category}-v${version}.json`;
-            
-            // Increment version for next time
+            const name = filename || `${examTitle.replace(/\s+/g, '-')}-${subjectName.replace(/\s+/g, '-')}-v${version}.json`;
             localStorage.setItem(storageKey, (version + 1).toString());
+
+            // Prepare the "Everything" bundle
+            const bundle = {
+                exportType: "full_assessment",
+                subject: subjectName,
+                examTitle: examTitle,
+                category: category,
+                generatedAt: new Date().toISOString(),
+                data: data // Contains competencies, notes, hours, and questions
+            };
             
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -770,12 +884,13 @@
             URL.revokeObjectURL(url);
         }
 
-        function addToHistory(results) {
-            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+        function addToHistory(results, category, importedSubjectName = null) {
+            const currentSubject = state.subjects.find(s => s.id === state.currentSubjectId);
             const historyItem = {
                 id: Date.now(),
-                subjectName: subject ? subject.name : 'Unknown',
+                subjectName: importedSubjectName || (currentSubject ? currentSubject.name : 'Unknown'),
                 timestamp: new Date().toLocaleString(),
+                category: category || (results[0]?.category || 'A'),
                 data: results
             };
             state.history.unshift(historyItem);
@@ -824,39 +939,7 @@
         function downloadTOSCSV(results) {
             if (!results) return;
             const subject = state.subjects.find(s => s.id === state.currentSubjectId);
-            const category = results[0]?.category || 'A';
-            
-            let csv = `Table of Specifications (TOS) - ${subject?.name || 'Subject'}\n`;
-            csv += `Category: ${category}\n\n`;
-            csv += `Learning Competency,Remembering,Understanding,Applying,Analyzing,Evaluating,Total Items\n`;
-            
-            let globalCounter = 1;
-            results.forEach(res => {
-                const qs = getQuestionsArray(res);
-                const itemsByLevel = {
-                    'Remembering': [],
-                    'Understanding': [],
-                    'Applying': [],
-                    'Analyzing': [],
-                    'Evaluating': []
-                };
-                
-                qs.forEach(q => {
-                    const level = q.cognitive_level || 'Remembering';
-                    if (itemsByLevel[level]) {
-                        itemsByLevel[level].push(globalCounter);
-                    }
-                    globalCounter++;
-                });
-                
-                csv += `"${res.competency}",`;
-                csv += `"${itemsByLevel['Remembering'].join(', ')}",`;
-                csv += `"${itemsByLevel['Understanding'].join(', ')}",`;
-                csv += `"${itemsByLevel['Applying'].join(', ')}",`;
-                csv += `"${itemsByLevel['Analyzing'].join(', ')}",`;
-                csv += `"${itemsByLevel['Evaluating'].join(', ')}",`;
-                csv += `${qs.length}\n`;
-            });
+            const csv = AppLogic.generateTOSCSV(results, subject?.name || 'Subject', results[0]?.category || 'A');
             
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
@@ -867,21 +950,6 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-        }
-
-        function addToHistory(results, category) {
-            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
-            const historyItem = {
-                id: Date.now(),
-                subjectName: subject ? subject.name : 'Unknown',
-                timestamp: new Date().toLocaleString(),
-                category: category,
-                data: results
-            };
-            state.history.unshift(historyItem);
-            if (state.history.length > 20) state.history.pop();
-            saveToLocalStorage();
-            renderHistory();
         }
 
         async function refineFullAssessment() {
@@ -931,7 +999,34 @@
 
             const totalExamItems = parseInt(document.getElementById('total-items').value) || 20;
             const category = document.getElementById('student-category').value;
-            const totalHours = subject.competencies.reduce((sum, c) => sum + (parseFloat(c.hours) || 1), 0);
+            const target = document.getElementById('exam-target').value;
+            
+            // Filter competencies based on target
+            const targetCompetencies = subject.competencies.filter(c => {
+                if (target === 'S1') return c.targetS1;
+                if (target === 'S2') return c.targetS2;
+                return c.targetTerm || (!c.targetS1 && !c.targetS2 && !c.targetTerm); // Default to Term or if none selected
+            });
+
+            if (targetCompetencies.length === 0) {
+                alert(`No competencies are assigned to ${document.getElementById('exam-target').selectedOptions[0].text}. Please check the checkboxes on your cards.`);
+                return;
+            }
+
+            const totalHours = targetCompetencies.reduce((sum, c) => sum + (parseFloat(c.hours) || 1), 0);
+
+            // PRE-CALCULATE ITEM DISTRIBUTION (STRICT TOS)
+            let remainingItems = totalExamItems;
+            const competencyItemCounts = targetCompetencies.map((comp, idx) => {
+                if (idx === targetCompetencies.length - 1) {
+                    return remainingItems; // Last competency gets all remaining items
+                }
+                let count = Math.round(((parseFloat(comp.hours) || 1) / totalHours) * totalExamItems);
+                if (count === 0 && remainingItems > 0) count = 1;
+                if (count > remainingItems) count = remainingItems;
+                remainingItems -= count;
+                return count;
+            });
 
             const btn = event.currentTarget;
             const originalText = btn.innerHTML;
@@ -947,7 +1042,13 @@
                 }
 
                 const results = [];
-                for (const comp of subject.competencies) {
+                const examTitle = document.getElementById('exam-title').value;
+
+                for (let i = 0; i < targetCompetencies.length; i++) {
+                    const comp = targetCompetencies[i];
+                    const itemCount = competencyItemCounts[i];
+
+                    if (itemCount === 0) continue;
                     if (!comp.title.trim()) continue;
 
                     const result = await callGenerateMCQ({
@@ -955,9 +1056,8 @@
                         subject: subject.name,
                         competency: comp.title,
                         notes: comp.notes,
-                        hours: parseFloat(comp.hours) || 1,
+                        itemCount: itemCount,
                         totalExamItems: totalExamItems,
-                        totalHours: totalHours,
                         category: category,
                         systemPrompt: systemPromptJson,
                         selectedModel: state.selectedModel,
@@ -985,7 +1085,20 @@
                         
                         const jsonString = cleanJson.substring(start, end + 1);
                         const parsedData = JSON.parse(jsonString);
-                        results.push({ competency: comp.title, questions: parsedData, category: category });
+                        
+                        // Include everything in the result object
+                        results.push({ 
+                            competency: comp.title, 
+                            notes: comp.notes, 
+                            hours: comp.hours,
+                            targetS1: comp.targetS1,
+                            targetS2: comp.targetS2,
+                            targetTerm: comp.targetTerm,
+                            questions: parsedData, 
+                            category: category,
+                            subjectName: subject.name,
+                            examTitle: examTitle
+                        });
                     }
                 }
 
@@ -1000,11 +1113,163 @@
             }
         }
 
+        function triggerImportJSON() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const rawData = JSON.parse(event.target.result);
+                        
+                        // Workspace / Full State Format
+                        if (rawData.exportType === "testmaker_workspace") {
+                            if (confirm('Import full workspace? This will update your subjects and settings.')) {
+                                state.subjects = rawData.subjects;
+                                state.systemPrompt = rawData.systemPrompt || state.systemPrompt;
+                                saveToLocalStorage();
+                                location.reload(); // Refresh to apply all changes
+                            }
+                            return;
+                        }
+
+                        // Case 1: Importing the new "Full Assessment" bundle
+                        if (rawData.exportType === "full_assessment" && Array.isArray(rawData.data)) {
+                            // Inject examTitle into results
+                            const results = rawData.data.map(d => ({ ...d, examTitle: rawData.examTitle }));
+                            showResults(results);
+                            addToHistory(results, rawData.category, rawData.subject);
+                            
+                            // Reconstruct subject for editing if user wants
+                            if (confirm(`Assessment imported! Would you like to add "${rawData.subject}" to your active sidebar for editing?`)) {
+                                const newId = Date.now().toString();
+                                const newSubject = {
+                                    id: newId,
+                                    name: rawData.subject,
+                                    competencies: rawData.data.map((item, idx) => ({
+                                        id: `comp-${newId}-${idx}`,
+                                        title: item.competency,
+                                        notes: item.notes || '',
+                                        hours: item.hours || 1,
+                                        targetS1: item.targetS1 || false,
+                                        targetS2: item.targetS2 || false,
+                                        targetTerm: item.targetTerm || false
+                                    }))
+                                };
+                                state.subjects.push(newSubject);
+                                state.currentSubjectId = newId;
+                                saveToLocalStorage();
+                                renderSubjects();
+                                renderCompetencies();
+                            }
+                        }
+                        // Case 2: Legacy Assessment Format
+                        else if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].competency && rawData[0].questions) {
+                            showResults(rawData);
+                            const legacyName = rawData[0].subjectName || 'Imported Assessment';
+                            addToHistory(rawData, rawData[0].category || 'A', legacyName);
+                            
+                            if (confirm(`Imported! Would you like to add this as an editable subject in your sidebar?`)) {
+                                const newId = Date.now().toString();
+                                state.subjects.push({
+                                    id: newId,
+                                    name: legacyName,
+                                    competencies: rawData.map((item, idx) => ({
+                                        id: `comp-${newId}-${idx}`,
+                                        title: item.competency,
+                                        notes: item.notes || '',
+                                        hours: item.hours || 1
+                                    }))
+                                });
+                                state.currentSubjectId = newId;
+                                saveToLocalStorage();
+                                renderSubjects();
+                                renderCompetencies();
+                            }
+                        } 
+                        // Case 3: Project State (Subjects list)
+                        else if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].name && rawData[0].competencies) {
+                            if (confirm('Replace your current subject list?')) {
+                                state.subjects = rawData;
+                                if (state.subjects.length > 0) state.currentSubjectId = state.subjects[0].id;
+                                saveToLocalStorage();
+                                renderSubjects();
+                                renderCompetencies();
+                                alert('Subjects imported.');
+                            }
+                        } else {
+                            alert('Unsupported JSON format.');
+                        }
+                    } catch (err) {
+                        alert('Error: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function exportWorkspace() {
+            const backup = {
+                exportType: "testmaker_workspace",
+                generatedAt: new Date().toISOString(),
+                subjects: state.subjects,
+                systemPrompt: state.systemPrompt,
+                selectedModel: state.selectedModel,
+                useFallback: state.useFallback
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `testmaker-workspace-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         // Initial Render
         updateTutorEngineModels();
         renderSubjects();
         renderCompetencies();
         renderHistory();
+
+        // Sidebar Resizer Logic
+        const resizer = document.getElementById('resizer');
+        const sidebar = document.getElementById('sidebar');
+        let isResizing = false;
+
+        const savedWidth = localStorage.getItem('testmaker_sidebar_width');
+        if (savedWidth) {
+            sidebar.style.width = savedWidth + 'px';
+        }
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            let newWidth = e.clientX;
+            if (newWidth < 200) newWidth = 200;
+            if (newWidth > 600) newWidth = 600;
+            sidebar.style.width = newWidth + 'px';
+            localStorage.setItem('testmaker_sidebar_width', newWidth);
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = 'default';
+                document.body.style.userSelect = 'auto';
+            }
+        });
 
         // Listen for Enter key on Subject Name
         document.getElementById('new-subject-name').addEventListener('keypress', function (e) {

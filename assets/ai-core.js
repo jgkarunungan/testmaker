@@ -23,8 +23,8 @@ async function callGenerateMCQ(inputs) {
 
     // Category Distribution Logic
     const dist = category === 'B' ? 
-        { easy: '70%', average: '20%', difficult: '10%' } : 
-        { easy: '50%', average: '30%', difficult: '20%' };
+        { lots: '70%', analyzing: '20%', evaluating: '10%' } : 
+        { lots: '60%', analyzing: '30%', evaluating: '10%' };
 
     const prompt = `
         Act as a Professional Assessment Designer and Subject Matter Expert in ${subject}.
@@ -59,9 +59,9 @@ async function callGenerateMCQ(inputs) {
         6. COGNITIVE CEILING: Do not exceed the identified level of the Learning Competency.
         7. SCAFFOLDING & SEQUENTIAL PROGRESSION: Within this competency, generate exactly ${itemCount} items starting from LOTS (Remembering, Understanding, Applying) and progressing to the identified ceiling (Analyzing, Evaluating). Questions MUST be ordered and grouped progressively by cognitive level.
         8. WEIGHTED DISTRIBUTION (CATEGORY ${category}):
-           - EASY (${dist.easy}): Knowledge/Remembering and Understanding.
-           - AVERAGE (${dist.average}): Applying and Analyzing.
-           - DIFFICULT (${dist.difficult}): Evaluating.
+           - LOTS (${dist.lots}): Remembering, Understanding, and Applying.
+           - ANALYZING (${dist.analyzing}): Analyzing level items.
+           - EVALUATING (${dist.evaluating}): Evaluating level items.
            - NO CREATING: Do not generate "Create" level questions.
         9. JSON STRUCTURE: You MUST return a single JSON object with the following structure:
            {

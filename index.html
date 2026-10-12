@@ -818,29 +818,30 @@
                 renderTermTabs();
                 renderCompetencies();
             }
-                }
-                saveToLocalStorage();
-                renderSubjects();
-                renderCompetencies();
-            }
-        }
-
         function addCompetency() {
-            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
             if (subject) {
+                const targetTerm = state.currentTerm === 'Legacy' ? 'T1' : state.currentTerm;
                 subject.competencies.push({
                     id: Date.now().toString(),
                     title: '',
                     notes: '',
-                    hours: 1
+                    hours: 1,
+                    term: targetTerm,
+                    schoolYearId: state.currentSchoolYearId,
+                    targetS1: true,
+                    targetS2: false,
+                    targetTerm: true
                 });
                 saveToLocalStorage();
+                renderTermTabs();
                 renderCompetencies();
             }
         }
 
         function updateCompetency(compId, field, value) {
-            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
+            if (!subject) return;
             const comp = subject.competencies.find(c => c.id === compId);
             if (comp) {
                 comp[field] = value;
@@ -849,22 +850,33 @@
         }
 
         function deleteCompetency(compId) {
-            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
+            if (!subject) return;
             subject.competencies = subject.competencies.filter(c => c.id !== compId);
             saveToLocalStorage();
+            renderTermTabs();
             renderCompetencies();
         }
 
         function moveCompetency(compId, direction) {
-            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
-            const index = subject.competencies.findIndex(c => c.id === compId);
-            if (direction === 'up' && index > 0) {
-                [subject.competencies[index], subject.competencies[index - 1]] = [subject.competencies[index - 1], subject.competencies[index]];
-            } else if (direction === 'down' && index < subject.competencies.length - 1) {
-                [subject.competencies[index], subject.competencies[index + 1]] = [subject.competencies[index + 1], subject.competencies[index]];
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
+            if (!subject) return;
+
+            const termComps = subject.competencies.filter(c => (c.term || 'T1') === state.currentTerm);
+            const termIdx = termComps.findIndex(c => c.id === compId);
+            if (termIdx === -1) return;
+
+            const targetTermIdx = direction === 'up' ? termIdx - 1 : termIdx + 1;
+            if (targetTermIdx < 0 || targetTermIdx >= termComps.length) return;
+
+            const globalIdx1 = subject.competencies.findIndex(c => c.id === compId);
+            const globalIdx2 = subject.competencies.findIndex(c => c.id === termComps[targetTermIdx].id);
+
+            if (globalIdx1 !== -1 && globalIdx2 !== -1) {
+                [subject.competencies[globalIdx1], subject.competencies[globalIdx2]] = [subject.competencies[globalIdx2], subject.competencies[globalIdx1]];
+                saveToLocalStorage();
+                renderCompetencies();
             }
-            saveToLocalStorage();
-            renderCompetencies();
         }
 
         function openSystemPrompt() {

@@ -51,12 +51,21 @@ async function callGenerateMCQ(inputs) {
         5. DISTRACTOR & OPTION LOGIC (PEDAGOGICAL RIGOR):
            - PLAUSIBILITY: All options must be highly plausible and based on documented common student misconceptions.
            - NO GIVEAWAYS: Ensure no option is obviously wrong or "dead" (homogenous in content and grammar).
-           - UNIFORM LENGTH: Options must be nearly equal in word count.
-           - ARRANGE BY LENGTH: You MUST arrange the four options from longest (first) to shortest (last).
-           - SHUFFLE ANSWERS: The correct answer MUST NOT always be in the same position. Distribute correct answers randomly across index 0, 1, 2, and 3 (A, B, C, D) throughout the entire assessment.
-           - ANTI-BIAS RULE: For HOTS questions (Analyzing, Evaluating), the LONGEST option (index 0) must NEVER be the correct answer.
+           - UNIFORM LENGTH & STRUCTURE: Options must be comparable in word count, grammatical structure, and syntax.
+           - EXACTLY ONE CORRECT ANSWER: Ensure exactly one option is unambiguously and defensibly correct.
+           - NO TRICK/AMBIGUOUS QUESTIONS: Avoid trick wording, double negatives, and ambiguous phrasing.
+           - NO "ALL/NONE OF THE ABOVE": Do NOT use "All of the above", "None of the above", "Both A and B", or similar phrases.
+           - ACCURATE INDEX: Set answer_index (0-3) to correspond to the exact position of the correct answer option.
 
-        6. COGNITIVE CEILING: Do not exceed the identified level of the Learning Competency.
+        6. BLOOM'S TAXONOMY RIGOR:
+           - Classify cognitive level based on true cognitive process required, not merely superficial action verbs:
+             * REMEMBERING: Retrieving or recognizing factual knowledge.
+             * UNDERSTANDING: Explaining, interpreting, comparing, or classifying concepts.
+             * APPLYING: Using formulas, rules, or procedures in a concrete situation.
+             * ANALYZING: Examining evidence, breaking down relationships, or interpreting data.
+             * EVALUATING: Defending judgments using criteria/standards.
+           - Do not classify recall items as Analyzing merely because "analyze" appears in the stem.
+           - COGNITIVE CEILING: Do not exceed the identified ceiling level of the Learning Competency.
         7. SCAFFOLDING & SEQUENTIAL PROGRESSION: Within this competency, generate exactly ${itemCount} items starting from LOTS (Remembering, Understanding, Applying) and progressing to the identified ceiling (Analyzing, Evaluating). Questions MUST be ordered and grouped progressively by cognitive level.
         8. WEIGHTED DISTRIBUTION (CATEGORY ${category}):
            - LOTS (${dist.lots}): Remembering, Understanding, and Applying.
@@ -69,8 +78,8 @@ async function callGenerateMCQ(inputs) {
              "questions": [ 
                 {
                   "question": "...",
-                  "options": ["Longest option", "Second longest", "Third longest", "Shortest option"],
-                  "answer_index": 1, // Randomly set (0-3) to match the correct text in the sorted list
+                  "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+                  "answer_index": 0, // Integer (0-3) corresponding to the correct option index
                   "cognitive_level": "...",
                   "rationale": "..."
                 }
@@ -139,7 +148,7 @@ async function callRefineAssessment(inputs) {
         1. Rewrite or modify the assessment based on the user's instruction.
         2. Maintain the same JSON schema.
         3. Ensure the quality, Bloom's Taxonomy alignment, and sequential ordering rules are still followed.
-        4. OPTION LENGTH & ORDERING: All options must be relatively equal in length and arranged from longest to shortest.
+        4. OPTION LENGTH & STRUCTURE: All options must be plausible and relatively equal in length and structure.
         5. LANGUAGE RULE: Maintain the language of the current assessment (Filipino or English) unless the user explicitly requests a translation in their instruction.
 
         RETURN ONLY THE UPDATED JSON. NO MARKDOWN.`;
@@ -180,7 +189,7 @@ async function callRefineItem(inputs) {
         1. Modify this specific question based on the user's instruction.
         2. Return the updated question in the same JSON format.
         3. Maintain Bloom's Taxonomy alignment and distractor quality.
-        4. OPTION LENGTH & ORDERING: Ensure options are relatively equal in length and arranged from longest to shortest.
+        4. OPTION LENGTH & STRUCTURE: Ensure options are plausible and relatively equal in length and structure.
         5. LANGUAGE RULE: Maintain the language of the current question item (Filipino or English) unless the user explicitly requests a translation in their instruction.
 
         RETURN ONLY THE UPDATED JSON OBJECT. NO MARKDOWN.`;

@@ -780,6 +780,25 @@
             renderCompetencies();
         }
 
+        function addSubject() {
+            const input = document.getElementById('new-subject-name');
+            if (input) input.value = '';
+            const modal = document.getElementById('subject-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            if (input) input.focus();
+        }
+
+        function closeSubjectModal() {
+            const modal = document.getElementById('subject-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
         function confirmAddSubject() {
             const name = document.getElementById('new-subject-name').value.trim();
             if (name) {
@@ -799,25 +818,6 @@
             }
         }
 
-        function addCompetency() {
-            const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
-            if (subject) {
-                const targetTerm = state.currentTerm === 'Legacy' ? 'T1' : state.currentTerm;
-                subject.competencies.push({
-                    id: Date.now().toString(),
-                    title: '',
-                    notes: '',
-                    hours: 1,
-                    term: targetTerm,
-                    schoolYearId: state.currentSchoolYearId,
-                    targetS1: true,
-                    targetS2: false,
-                    targetTerm: true
-                });
-                saveToLocalStorage();
-                renderTermTabs();
-                renderCompetencies();
-            }
         function addCompetency() {
             const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
             if (subject) {

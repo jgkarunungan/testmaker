@@ -130,7 +130,12 @@
                     <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                     Active Project
                 </div>
-                <h2 class="text-2xl font-bold text-white" id="current-subject">Select a Subject</h2>
+                <div class="flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-white" id="current-subject">Select a Subject</h2>
+                    <button id="delete-subject-btn" onclick="openDeleteSubjectModal(state.currentSubjectId)" class="hidden px-2.5 py-1 bg-red-500/10 hover:bg-red-500 hover:text-white text-red-400 border border-red-500/20 text-xs font-bold rounded-lg transition-all" title="Permanently Delete Active Subject">
+                        <i class="fas fa-trash-alt mr-1"></i> Delete Subject
+                    </button>
+                </div>
             </div>
             <div class="flex gap-3">
                 <div class="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800">
@@ -422,6 +427,102 @@
         </div>
     </div>
 
+    <!-- Permanent Delete Subject Modal -->
+    <div id="delete-subject-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[90] backdrop-blur-sm p-4">
+        <div class="glass w-full max-w-lg p-8 rounded-3xl border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-red-400 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle"></i> Permanent Subject Deletion
+                    </h3>
+                    <p class="text-slate-400 text-xs mt-1">This action cannot be undone.</p>
+                </div>
+                <button onclick="closeDeleteSubjectModal()" class="text-slate-500 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 mb-6 space-y-2 text-xs">
+                <div><span class="text-slate-500">Subject Name:</span> <strong id="delete-sub-name" class="text-white font-bold"></strong></div>
+                <div><span class="text-slate-500">Academic Year:</span> <span id="delete-sub-sy" class="text-blue-400 font-semibold"></span></div>
+                <div><span class="text-slate-500">Associated Competencies:</span> <span id="delete-comp-count" class="text-indigo-400 font-bold">0</span></div>
+                <div><span class="text-slate-500">Saved History Records:</span> <span id="delete-history-count" class="text-amber-400 font-bold">0</span></div>
+            </div>
+
+            <div class="space-y-4 mb-6">
+                <div class="flex items-center gap-2 bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                    <input type="checkbox" id="delete-include-history" class="rounded border-slate-700 bg-slate-950 text-red-500">
+                    <label for="delete-include-history" class="text-xs text-slate-300 cursor-pointer">
+                        Also permanently delete matching examination history records
+                    </label>
+                </div>
+
+                <div>
+                    <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">
+                        Type <strong id="delete-confirm-phrase" class="text-red-400"></strong> to confirm:
+                    </label>
+                    <input type="text" id="delete-confirm-input" oninput="validateDeleteInput()" placeholder="Type phrase here..."
+                           class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-sm text-white outline-none focus:ring-2 ring-red-500/30">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button onclick="closeDeleteSubjectModal()" class="px-5 py-2 text-slate-400 text-xs font-medium">Cancel</button>
+                <button id="delete-sub-confirm-btn" onclick="executePermanentDeleteSubject()" disabled class="px-6 py-2 bg-red-600/50 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed transition-all">
+                    Permanently Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Preview & Restore Modal -->
+    <div id="import-preview-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[100] backdrop-blur-sm p-4">
+        <div class="glass w-full max-w-lg p-8 rounded-3xl border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-file-import text-green-400"></i> Import Workspace Preview
+                    </h3>
+                    <p class="text-slate-400 text-xs mt-1">Review the contents of the imported JSON workspace.</p>
+                </div>
+                <button onclick="closeImportPreviewModal()" class="text-slate-500 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 mb-6 space-y-2 text-xs">
+                <div><span class="text-slate-500">Export Type:</span> <strong id="import-type" class="text-blue-400 font-bold"></strong></div>
+                <div><span class="text-slate-500">Export Date:</span> <span id="import-date" class="text-slate-300 font-semibold"></span></div>
+                <div><span class="text-slate-500">School Years:</span> <span id="import-sy-count" class="text-indigo-400 font-bold">0</span></div>
+                <div><span class="text-slate-500">Subjects Total:</span> <span id="import-sub-count" class="text-green-400 font-bold">0</span></div>
+                <div><span class="text-slate-500">Competencies Total:</span> <span id="import-comp-count" class="text-amber-400 font-bold">0</span></div>
+                <div><span class="text-slate-500">Saved History Records:</span> <span id="import-history-count" class="text-purple-400 font-bold">0</span></div>
+            </div>
+
+            <div class="space-y-3 mb-6">
+                <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-300">
+                    <i class="fas fa-shield-alt mr-1"></i> An automatic backup of your current workspace will be created before applying this import.
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input type="radio" id="import-mode-replace" name="import-mode" value="replace" checked class="text-blue-500">
+                    <label for="import-mode-replace" class="text-xs text-slate-200 cursor-pointer font-bold">
+                        Full Workspace Replacement (Recommended)
+                    </label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="radio" id="import-mode-merge" name="import-mode" value="merge" class="text-blue-500">
+                    <label for="import-mode-merge" class="text-xs text-slate-200 cursor-pointer font-bold">
+                        Merge Into Existing Workspace
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button onclick="closeImportPreviewModal()" class="px-5 py-2 text-slate-400 text-xs font-medium">Cancel</button>
+                <button onclick="confirmExecuteImport()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all">
+                    Restore / Apply Import
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Subject Modal -->
     <div id="subject-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[70] backdrop-blur-sm p-4">
         <div class="glass w-full max-w-md p-8 rounded-3xl border-slate-700 shadow-2xl">
@@ -489,18 +590,43 @@
 }`
         };
 
-        // Non-destructive Migration Engine v6
+        // Non-destructive Migration & Data Recovery Engine v6
         function migrateStateV6() {
+            // 1. Load saved school years if memory state is empty
             const savedSY = localStorage.getItem('testmaker_school_years');
-            if (savedSY) {
-                try { state.schoolYears = JSON.parse(savedSY); } catch(e){}
+            if (savedSY && (!Array.isArray(state.schoolYears) || state.schoolYears.length === 0)) {
+                try {
+                    const parsedSY = JSON.parse(savedSY);
+                    if (Array.isArray(parsedSY) && parsedSY.length > 0) state.schoolYears = parsedSY;
+                } catch(e){}
             }
 
+            // 2. Load saved subjects if memory state is empty
             const savedState = localStorage.getItem('testmaker_state');
-            if (savedState) {
-                try { state.subjects = JSON.parse(savedState); } catch(e){}
+            if (savedState && (!Array.isArray(state.subjects) || state.subjects.length === 0)) {
+                try {
+                    const parsedState = JSON.parse(savedState);
+                    if (Array.isArray(parsedState) && parsedState.length > 0) {
+                        state.subjects = parsedState;
+                    }
+                } catch(e){}
             }
 
+            // 3. Fallback to pre-import backup if state.subjects is empty or contains only default Math
+            const preImportBackup = localStorage.getItem('testmaker_pre_import_backup');
+            if (preImportBackup && (!Array.isArray(state.subjects) || state.subjects.length === 0 || (state.subjects.length === 1 && state.subjects[0].id === '1' && state.subjects[0].name === 'Mathematics'))) {
+                try {
+                    const backupObj = JSON.parse(preImportBackup);
+                    if (Array.isArray(backupObj.subjects) && backupObj.subjects.length > 0) {
+                        state.subjects = backupObj.subjects;
+                    }
+                    if (Array.isArray(backupObj.schoolYears) && backupObj.schoolYears.length > 0) {
+                        state.schoolYears = backupObj.schoolYears;
+                    }
+                } catch(e){}
+            }
+
+            // 4. Default SY if none present
             if (!Array.isArray(state.schoolYears) || state.schoolYears.length === 0) {
                 state.schoolYears = [{ id: 'sy-2026-2027', name: 'SY 2026-2027' }];
             }
@@ -509,6 +635,7 @@
                 state.currentSchoolYearId = state.schoolYears[0].id;
             }
 
+            // 5. Ensure all subjects & competencies have schoolYearId and term properties without deleting anything!
             state.subjects.forEach(sub => {
                 if (!sub.schoolYearId) {
                     sub.schoolYearId = state.schoolYears[0].id;
@@ -672,6 +799,8 @@
             const filteredSubjects = state.subjects.filter(s => s.schoolYearId === state.currentSchoolYearId);
             if (!filteredSubjects.find(s => s.id === state.currentSubjectId) && filteredSubjects.length > 0) {
                 state.currentSubjectId = filteredSubjects[0].id;
+            } else if (filteredSubjects.length === 0) {
+                state.currentSubjectId = null;
             }
 
             filteredSubjects.forEach(sub => {
@@ -681,7 +810,7 @@
                 btn.onclick = () => selectSubject(sub.id);
                 btn.innerHTML = `
                     <span><i class="fas fa-book-open mr-2"></i> ${sub.name}</span>
-                    <i onclick="deleteSubject(event, '${sub.id}')" class="fas fa-times opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity p-1"></i>
+                    <i onclick="openDeleteSubjectModal('${sub.id}')" title="Delete Subject" class="fas fa-trash-alt opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity p-1 text-xs"></i>
                 `;
                 nav.appendChild(btn);
             });
@@ -693,13 +822,21 @@
             container.innerHTML = '';
 
             const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
-            
+            const delBtn = document.getElementById('delete-subject-btn');
+
             if (!subject) {
                 document.getElementById('current-subject').innerText = 'No Subject Selected';
+                if (delBtn) delBtn.classList.add('hidden');
+
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'p-12 border-2 border-dashed border-slate-800 rounded-3xl text-center text-slate-500 text-sm';
+                emptyMsg.innerHTML = `<i class="fas fa-book-open text-3xl mb-3 block text-slate-600"></i> No subjects created for this academic year. Click "Add New Subject" in the sidebar.`;
+                container.appendChild(emptyMsg);
                 return;
             }
 
             document.getElementById('current-subject').innerText = subject.name;
+            if (delBtn) delBtn.classList.remove('hidden');
 
             const termCompetencies = subject.competencies.filter(c => (c.term || 'T1') === state.currentTerm);
 
@@ -816,6 +953,117 @@
                 renderCompetencies();
                 closeSubjectModal();
             }
+        }
+
+        function deleteSubject(event, id) {
+            if (event) event.stopPropagation();
+            openDeleteSubjectModal(id);
+        }
+
+        let pendingDeleteSubjectId = null;
+
+        function openDeleteSubjectModal(subId) {
+            const targetId = subId || state.currentSubjectId;
+            const subject = state.subjects.find(s => s.id === targetId && s.schoolYearId === state.currentSchoolYearId);
+            if (!subject) return;
+
+            pendingDeleteSubjectId = targetId;
+            const syObj = state.schoolYears.find(sy => sy.id === state.currentSchoolYearId);
+
+            const nameElem = document.getElementById('delete-sub-name');
+            if (nameElem) nameElem.innerText = subject.name;
+
+            const syElem = document.getElementById('delete-sub-sy');
+            if (syElem) syElem.innerText = syObj ? syObj.name : 'Current SY';
+
+            const compCountElem = document.getElementById('delete-comp-count');
+            if (compCountElem) compCountElem.innerText = `${subject.competencies ? subject.competencies.length : 0} Competencies`;
+
+            const matchHistoryCount = state.history ? state.history.filter(h => h.subjectName === subject.name).length : 0;
+            const histCountElem = document.getElementById('delete-history-count');
+            if (histCountElem) histCountElem.innerText = `${matchHistoryCount} Records`;
+
+            const chk = document.getElementById('delete-include-history');
+            if (chk) chk.checked = false;
+
+            const confirmPhrase = subject.name.trim() || 'DELETE';
+            const phraseElem = document.getElementById('delete-confirm-phrase');
+            if (phraseElem) phraseElem.innerText = `"${confirmPhrase}"`;
+
+            const input = document.getElementById('delete-confirm-input');
+            if (input) input.value = '';
+
+            const btn = document.getElementById('delete-sub-confirm-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.className = 'px-6 py-2 bg-red-600/50 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed transition-all';
+            }
+
+            const modal = document.getElementById('delete-subject-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            if (input) input.focus();
+        }
+
+        function validateDeleteInput() {
+            const subject = state.subjects.find(s => s.id === pendingDeleteSubjectId && s.schoolYearId === state.currentSchoolYearId);
+            if (!subject) return;
+
+            const confirmPhrase = (subject.name.trim() || 'DELETE').toLowerCase();
+            const typed = document.getElementById('delete-confirm-input').value.trim().toLowerCase();
+            const btn = document.getElementById('delete-sub-confirm-btn');
+
+            if (btn) {
+                if (typed === confirmPhrase || typed === 'delete') {
+                    btn.disabled = false;
+                    btn.className = 'px-6 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-red-600/30 cursor-pointer transition-all';
+                } else {
+                    btn.disabled = true;
+                    btn.className = 'px-6 py-2 bg-red-600/50 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed transition-all';
+                }
+            }
+        }
+
+        function closeDeleteSubjectModal() {
+            pendingDeleteSubjectId = null;
+            const modal = document.getElementById('delete-subject-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function executePermanentDeleteSubject() {
+            if (!pendingDeleteSubjectId) return;
+
+            const targetSub = state.subjects.find(s => s.id === pendingDeleteSubjectId && s.schoolYearId === state.currentSchoolYearId);
+            if (!targetSub) return;
+
+            const chk = document.getElementById('delete-include-history');
+            const includeHistory = chk ? chk.checked : false;
+
+            // 1. Remove subject & competencies from active school year
+            state.subjects = state.subjects.filter(s => !(s.id === pendingDeleteSubjectId && s.schoolYearId === state.currentSchoolYearId));
+
+            // 2. Optionally remove matching history records
+            if (includeHistory && Array.isArray(state.history)) {
+                state.history = state.history.filter(h => h.subjectName !== targetSub.name);
+            }
+
+            // 3. Update active subject selection
+            const remaining = state.subjects.filter(s => s.schoolYearId === state.currentSchoolYearId);
+            if (state.currentSubjectId === pendingDeleteSubjectId) {
+                state.currentSubjectId = remaining.length > 0 ? remaining[0].id : null;
+            }
+
+            saveToLocalStorage();
+            closeDeleteSubjectModal();
+            renderSubjects();
+            renderTermTabs();
+            renderCompetencies();
+            renderHistory();
         }
 
         function addCompetency() {
@@ -1607,6 +1855,8 @@
             }
         }
 
+        let pendingImportRawData = null;
+
         function triggerImportJSON() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -1619,35 +1869,95 @@
                     try {
                         const rawData = JSON.parse(event.target.result);
                         
-                        // Workspace / Full State Format
-                        if (rawData.exportType === "testmaker_workspace") {
-                            if (confirm('Import full workspace? This will update your subjects and settings.')) {
-                                state.subjects = rawData.subjects;
-                                state.systemPrompt = rawData.systemPrompt || state.systemPrompt;
-                                saveToLocalStorage();
-                                location.reload(); // Refresh to apply all changes
+                        // Case 0: Pre-Phase 6 Full Workspace Backup File
+                        if (rawData.backupType === "pre_phase6_full_backup" || rawData.sampleAssessments || (rawData.defaultState && rawData.defaultState.subjects)) {
+                            const recoveredSubjectsMap = new Map();
+
+                            if (rawData.defaultState && Array.isArray(rawData.defaultState.subjects)) {
+                                rawData.defaultState.subjects.forEach(s => {
+                                    recoveredSubjectsMap.set(s.name, {
+                                        id: s.id || `sub-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+                                        name: s.name,
+                                        schoolYearId: state.currentSchoolYearId,
+                                        competencies: (s.competencies || []).map(c => ({
+                                            ...c,
+                                            term: c.term || 'T1',
+                                            schoolYearId: state.currentSchoolYearId
+                                        }))
+                                    });
+                                });
                             }
+
+                            if (rawData.sampleAssessments && typeof rawData.sampleAssessments === 'object') {
+                                Object.keys(rawData.sampleAssessments).forEach(fKey => {
+                                    const sample = rawData.sampleAssessments[fKey];
+                                    if (sample && Array.isArray(sample.data)) {
+                                        const subName = sample.subject || 'Imported Subject';
+                                        if (!recoveredSubjectsMap.has(subName)) {
+                                            recoveredSubjectsMap.set(subName, {
+                                                id: `sub-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+                                                name: subName,
+                                                schoolYearId: state.currentSchoolYearId,
+                                                competencies: []
+                                            });
+                                        }
+                                        const subObj = recoveredSubjectsMap.get(subName);
+                                        sample.data.forEach((compItem, idx) => {
+                                            if (compItem.competency && !subObj.competencies.find(c => c.title === compItem.competency)) {
+                                                subObj.competencies.push({
+                                                    id: `comp-${subObj.id}-${idx}`,
+                                                    title: compItem.competency,
+                                                    notes: compItem.notes || '',
+                                                    hours: compItem.hours || 1,
+                                                    term: 'T1',
+                                                    schoolYearId: state.currentSchoolYearId,
+                                                    targetS1: true,
+                                                    targetS2: false,
+                                                    targetTerm: true
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+
+                            const reconstructedSubjects = Array.from(recoveredSubjectsMap.values());
+                            openImportPreviewModal({
+                                exportType: "testmaker_full_workspace_v6",
+                                exportedAt: rawData.timestamp || new Date().toISOString(),
+                                schoolYears: state.schoolYears,
+                                currentSchoolYearId: state.currentSchoolYearId,
+                                subjects: reconstructedSubjects,
+                                history: state.history
+                            });
                             return;
                         }
 
-                        // Case 1: Importing the new "Full Assessment" bundle
+                        // Case 1: Workspace / Full State Format (v6 or legacy)
+                        if (rawData.exportType === "testmaker_full_workspace_v6" || rawData.exportType === "testmaker_workspace") {
+                            openImportPreviewModal(rawData);
+                            return;
+                        }
+
+                        // Case 1: Importing "Full Assessment" bundle
                         if (rawData.exportType === "full_assessment" && Array.isArray(rawData.data)) {
-                            // Inject examTitle into results
                             const results = rawData.data.map(d => ({ ...d, examTitle: rawData.examTitle }));
                             showResults(results);
                             addToHistory(results, rawData.category, rawData.subject);
                             
-                            // Reconstruct subject for editing if user wants
-                            if (confirm(`Assessment imported! Would you like to add "${rawData.subject}" to your active sidebar for editing?`)) {
+                            if (confirm(`Assessment imported! Add "${rawData.subject}" to active sidebar for editing?`)) {
                                 const newId = Date.now().toString();
                                 const newSubject = {
                                     id: newId,
                                     name: rawData.subject,
+                                    schoolYearId: state.currentSchoolYearId,
                                     competencies: rawData.data.map((item, idx) => ({
                                         id: `comp-${newId}-${idx}`,
                                         title: item.competency,
                                         notes: item.notes || '',
                                         hours: item.hours || 1,
+                                        term: state.currentTerm === 'Legacy' ? 'T1' : state.currentTerm,
+                                        schoolYearId: state.currentSchoolYearId,
                                         targetS1: item.targetS1 || false,
                                         targetS2: item.targetS2 || false,
                                         targetTerm: item.targetTerm || false
@@ -1657,6 +1967,7 @@
                                 state.currentSubjectId = newId;
                                 saveToLocalStorage();
                                 renderSubjects();
+                                renderTermTabs();
                                 renderCompetencies();
                             }
                         }
@@ -1666,39 +1977,40 @@
                             const legacyName = rawData[0].subjectName || 'Imported Assessment';
                             addToHistory(rawData, rawData[0].category || 'A', legacyName);
                             
-                            if (confirm(`Imported! Would you like to add this as an editable subject in your sidebar?`)) {
+                            if (confirm(`Imported! Add as editable subject in sidebar?`)) {
                                 const newId = Date.now().toString();
                                 state.subjects.push({
                                     id: newId,
                                     name: legacyName,
+                                    schoolYearId: state.currentSchoolYearId,
                                     competencies: rawData.map((item, idx) => ({
                                         id: `comp-${newId}-${idx}`,
                                         title: item.competency,
                                         notes: item.notes || '',
-                                        hours: item.hours || 1
+                                        hours: item.hours || 1,
+                                        term: 'T1',
+                                        schoolYearId: state.currentSchoolYearId
                                     }))
                                 });
                                 state.currentSubjectId = newId;
                                 saveToLocalStorage();
                                 renderSubjects();
+                                renderTermTabs();
                                 renderCompetencies();
                             }
                         } 
                         // Case 3: Project State (Subjects list)
                         else if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].name && rawData[0].competencies) {
-                            if (confirm('Replace your current subject list?')) {
-                                state.subjects = rawData;
-                                if (state.subjects.length > 0) state.currentSubjectId = state.subjects[0].id;
-                                saveToLocalStorage();
-                                renderSubjects();
-                                renderCompetencies();
-                                alert('Subjects imported.');
-                            }
+                            openImportPreviewModal({
+                                exportType: "subjects_list",
+                                exportedAt: new Date().toISOString(),
+                                subjects: rawData
+                            });
                         } else {
-                            alert('Unsupported JSON format.');
+                            alert('Unsupported or invalid JSON format.');
                         }
                     } catch (err) {
-                        alert('Error: ' + err.message);
+                        alert('Import failed: ' + err.message);
                     }
                 };
                 reader.readAsText(file);
@@ -1706,11 +2018,121 @@
             input.click();
         }
 
+        function openImportPreviewModal(rawData) {
+            pendingImportRawData = rawData;
+
+            document.getElementById('import-type').innerText = rawData.exportType || 'Workspace';
+            document.getElementById('import-date').innerText = rawData.exportedAt || rawData.generatedAt || new Date().toLocaleString();
+
+            const syCount = Array.isArray(rawData.schoolYears) ? rawData.schoolYears.length : 1;
+            const subCount = Array.isArray(rawData.subjects) ? rawData.subjects.length : 0;
+            const historyCount = Array.isArray(rawData.history) ? rawData.history.length : 0;
+
+            let totalComps = 0;
+            if (Array.isArray(rawData.subjects)) {
+                rawData.subjects.forEach(s => {
+                    if (Array.isArray(s.competencies)) totalComps += s.competencies.length;
+                });
+            }
+
+            document.getElementById('import-sy-count').innerText = `${syCount} School Years`;
+            document.getElementById('import-sub-count').innerText = `${subCount} Subjects`;
+            document.getElementById('import-comp-count').innerText = `${totalComps} Competencies`;
+            document.getElementById('import-history-count').innerText = `${historyCount} Saved Exams`;
+
+            const modal = document.getElementById('import-preview-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeImportPreviewModal() {
+            pendingImportRawData = null;
+            const modal = document.getElementById('import-preview-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function confirmExecuteImport() {
+            if (!pendingImportRawData) return;
+
+            const isReplace = document.getElementById('import-mode-replace').checked;
+
+            // 1. Destination Backup before import
+            const destBackup = {
+                backupTimestamp: new Date().toISOString(),
+                schoolYears: state.schoolYears,
+                subjects: state.subjects,
+                history: state.history
+            };
+            localStorage.setItem('testmaker_pre_import_backup', JSON.stringify(destBackup));
+
+            if (isReplace) {
+                // Full Replacement
+                if (Array.isArray(pendingImportRawData.schoolYears) && pendingImportRawData.schoolYears.length > 0) {
+                    state.schoolYears = pendingImportRawData.schoolYears;
+                }
+                if (Array.isArray(pendingImportRawData.subjects)) {
+                    state.subjects = pendingImportRawData.subjects;
+                }
+                if (Array.isArray(pendingImportRawData.history)) {
+                    state.history = pendingImportRawData.history;
+                }
+                if (pendingImportRawData.currentSchoolYearId) state.currentSchoolYearId = pendingImportRawData.currentSchoolYearId;
+                if (pendingImportRawData.currentSubjectId) state.currentSubjectId = pendingImportRawData.currentSubjectId;
+                if (pendingImportRawData.currentTerm) state.currentTerm = pendingImportRawData.currentTerm;
+                if (pendingImportRawData.systemPrompt) state.systemPrompt = pendingImportRawData.systemPrompt;
+                if (pendingImportRawData.selectedModel) state.selectedModel = pendingImportRawData.selectedModel;
+            } else {
+                // Safe Merge
+                if (Array.isArray(pendingImportRawData.schoolYears)) {
+                    pendingImportRawData.schoolYears.forEach(sy => {
+                        if (!state.schoolYears.find(existingSy => existingSy.id === sy.id)) {
+                            state.schoolYears.push(sy);
+                        }
+                    });
+                }
+                if (Array.isArray(pendingImportRawData.subjects)) {
+                    pendingImportRawData.subjects.forEach(sub => {
+                        if (!state.subjects.find(existingSub => existingSub.id === sub.id && existingSub.schoolYearId === sub.schoolYearId)) {
+                            state.subjects.push(sub);
+                        }
+                    });
+                }
+                if (Array.isArray(pendingImportRawData.history)) {
+                    pendingImportRawData.history.forEach(hist => {
+                        if (!state.history.find(existingHist => existingHist.id === hist.id)) {
+                            state.history.push(hist);
+                        }
+                    });
+                }
+            }
+
+            migrateStateV6();
+            saveToLocalStorage();
+            closeImportPreviewModal();
+
+            renderSchoolYears();
+            renderSubjects();
+            renderTermTabs();
+            renderCompetencies();
+            renderHistory();
+
+            alert('Workspace import completed successfully!');
+        }
+
         function exportWorkspace() {
             const backup = {
-                exportType: "testmaker_workspace",
-                generatedAt: new Date().toISOString(),
+                exportType: "testmaker_full_workspace_v6",
+                schemaVersion: "6.2",
+                exportedAt: new Date().toISOString(),
+                schoolYears: state.schoolYears,
+                currentSchoolYearId: state.currentSchoolYearId,
+                currentSubjectId: state.currentSubjectId,
+                currentTerm: state.currentTerm,
                 subjects: state.subjects,
+                history: state.history,
                 systemPrompt: state.systemPrompt,
                 selectedModel: state.selectedModel,
                 useFallback: state.useFallback
@@ -1719,7 +2141,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `testmaker-workspace-${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `testmaker-full-workspace-${new Date().toISOString().split('T')[0]}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

@@ -81,6 +81,18 @@
             </h1>
         </div>
 
+        <div class="px-4 mb-3">
+            <label class="text-[10px] uppercase font-bold text-slate-500 block mb-1">Academic Year</label>
+            <div class="flex gap-2">
+                <select id="sy-select" onchange="changeSchoolYear(this.value)" class="flex-1 bg-slate-900/80 border border-slate-700 rounded-lg py-1.5 px-3 text-xs text-blue-400 font-bold outline-none cursor-pointer">
+                    <!-- School Years injected dynamically -->
+                </select>
+                <button onclick="addSchoolYearModal()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg text-xs transition-all" title="New School Year">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+
         <div class="px-4 mb-4">
             <div class="relative">
                 <i class="fas fa-search absolute left-3 top-3 text-slate-500 text-sm"></i>
@@ -159,6 +171,27 @@
                 </button>
             </div>
         </header>
+
+        <!-- Term Navigation Tabs -->
+        <div class="px-8 pt-4 pb-2 border-b border-slate-800/80 flex items-center justify-between backdrop-blur-md bg-slate-950/20">
+            <div class="flex gap-2" id="term-tabs">
+                <button id="term-t1-btn" onclick="changeTerm('T1')" class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-blue-600 text-white shadow">
+                    Term 1
+                </button>
+                <button id="term-t2-btn" onclick="changeTerm('T2')" class="px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white bg-slate-900/50 border border-slate-800">
+                    Term 2
+                </button>
+                <button id="term-t3-btn" onclick="changeTerm('T3')" class="px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white bg-slate-900/50 border border-slate-800">
+                    Term 3
+                </button>
+                <button id="term-legacy-btn" onclick="changeTerm('Legacy')" class="hidden px-4 py-2 rounded-xl text-xs font-bold transition-all text-amber-400 bg-amber-500/10 border border-amber-500/20">
+                    <i class="fas fa-archive mr-1"></i> Legacy / Unassigned
+                </button>
+            </div>
+            <div class="text-xs text-slate-500 font-medium">
+                Active Term: <strong class="text-white" id="active-term-label">Term 1</strong>
+            </div>
+        </div>
 
         <!-- Competency List -->
         <section class="flex-1 overflow-y-auto p-8 space-y-6" id="competency-container">
@@ -363,6 +396,32 @@
         </div>
     </div>
 
+    <!-- Add School Year Modal -->
+    <div id="sy-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[80] backdrop-blur-sm p-4">
+        <div class="glass w-full max-w-md p-8 rounded-3xl border-slate-700 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-2">New Academic Year</h3>
+            <p class="text-slate-400 text-sm mb-6">Enter school year name (e.g. "SY 2027-2028").</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">School Year Name</label>
+                    <input type="text" id="new-sy-name" placeholder="e.g. SY 2027-2028" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white outline-none focus:ring-2 ring-blue-500/20">
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                    <input type="checkbox" id="copy-sy-curriculum" class="rounded border-slate-700 bg-slate-950 text-blue-500">
+                    <label for="copy-sy-curriculum" class="text-xs text-slate-300 cursor-pointer">
+                        Copy subject & competency curriculum from active school year
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-8 gap-4">
+                <button onclick="closeSchoolYearModal()" class="px-6 py-2 text-slate-400 hover:text-white font-medium">Cancel</button>
+                <button onclick="confirmAddSchoolYear()" class="px-8 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold shadow-lg shadow-blue-500/20">Create</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Subject Modal -->
     <div id="subject-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[70] backdrop-blur-sm p-4">
         <div class="glass w-full max-w-md p-8 rounded-3xl border-slate-700 shadow-2xl">
@@ -388,12 +447,22 @@
 
     <script>
         let state = {
-            subjects: [
-                { id: '1', name: 'Mathematics', competencies: [
-                    { id: 'c1', title: 'Quadratic Equations', notes: 'Focus on real-world applications of the quadratic formula. Include at least one question involving area of rectangles and one involving vertical motion. Ensure difficulty is set to Grade 10 level.' }
-                ]}
+            schoolYears: [
+                { id: 'sy-2026-2027', name: 'SY 2026-2027' }
             ],
+            currentSchoolYearId: localStorage.getItem('testmaker_current_sy') || 'sy-2026-2027',
             currentSubjectId: localStorage.getItem('testmaker_current_subject') || '1',
+            currentTerm: localStorage.getItem('testmaker_current_term') || 'T1', // 'T1' | 'T2' | 'T3' | 'Legacy'
+            subjects: [
+                {
+                    id: '1',
+                    name: 'Mathematics',
+                    schoolYearId: 'sy-2026-2027',
+                    competencies: [
+                        { id: 'c1', title: 'Quadratic Equations', notes: 'Focus on real-world applications of the quadratic formula.', hours: 1, term: 'T1', schoolYearId: 'sy-2026-2027', targetS1: true, targetS2: false, targetTerm: true }
+                    ]
+                }
+            ],
             apiKey: localStorage.getItem('gemini_api_key') || '',
             selectedModel: localStorage.getItem('testmaker_model') || 'gemini-1.5-flash',
             useFallback: localStorage.getItem('testmaker_use_fallback') !== 'false',
@@ -420,19 +489,48 @@
 }`
         };
 
-        // Initialize from LocalStorage
-        const savedState = localStorage.getItem('testmaker_state');
-        if (savedState) {
-            state.subjects = JSON.parse(savedState);
-            // Ensure currentSubjectId is valid or default to first subject
-            if (!state.subjects.find(s => s.id === state.currentSubjectId) && state.subjects.length > 0) {
-                state.currentSubjectId = state.subjects[0].id;
+        // Non-destructive Migration Engine v6
+        function migrateStateV6() {
+            const savedSY = localStorage.getItem('testmaker_school_years');
+            if (savedSY) {
+                try { state.schoolYears = JSON.parse(savedSY); } catch(e){}
             }
+
+            const savedState = localStorage.getItem('testmaker_state');
+            if (savedState) {
+                try { state.subjects = JSON.parse(savedState); } catch(e){}
+            }
+
+            if (!Array.isArray(state.schoolYears) || state.schoolYears.length === 0) {
+                state.schoolYears = [{ id: 'sy-2026-2027', name: 'SY 2026-2027' }];
+            }
+
+            if (!state.schoolYears.find(sy => sy.id === state.currentSchoolYearId)) {
+                state.currentSchoolYearId = state.schoolYears[0].id;
+            }
+
+            state.subjects.forEach(sub => {
+                if (!sub.schoolYearId) {
+                    sub.schoolYearId = state.schoolYears[0].id;
+                }
+                if (!Array.isArray(sub.competencies)) {
+                    sub.competencies = [];
+                }
+                sub.competencies.forEach(comp => {
+                    if (!comp.schoolYearId) comp.schoolYearId = sub.schoolYearId;
+                    if (!comp.term) comp.term = 'T1';
+                });
+            });
+
+            saveToLocalStorage();
         }
 
         function saveToLocalStorage() {
             localStorage.setItem('testmaker_state', JSON.stringify(state.subjects));
+            localStorage.setItem('testmaker_school_years', JSON.stringify(state.schoolYears));
+            localStorage.setItem('testmaker_current_sy', state.currentSchoolYearId);
             localStorage.setItem('testmaker_current_subject', state.currentSubjectId);
+            localStorage.setItem('testmaker_current_term', state.currentTerm);
             localStorage.setItem('testmaker_model', state.selectedModel);
             localStorage.setItem('testmaker_use_fallback', state.useFallback);
             localStorage.setItem('testmaker_history', JSON.stringify(state.history));
@@ -440,10 +538,143 @@
             localStorage.setItem('system_prompt', state.systemPrompt);
         }
 
+        // School Year & Term Functions
+        function renderSchoolYears() {
+            const select = document.getElementById('sy-select');
+            if (!select) return;
+            select.innerHTML = '';
+            state.schoolYears.forEach(sy => {
+                const opt = document.createElement('option');
+                opt.value = sy.id;
+                opt.innerText = sy.name;
+                if (sy.id === state.currentSchoolYearId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function changeSchoolYear(syId) {
+            state.currentSchoolYearId = syId;
+            saveToLocalStorage();
+            renderSubjects();
+            renderTermTabs();
+            renderCompetencies();
+        }
+
+        function addSchoolYearModal() {
+            document.getElementById('new-sy-name').value = '';
+            document.getElementById('copy-sy-curriculum').checked = false;
+            const modal = document.getElementById('sy-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.getElementById('new-sy-name').focus();
+        }
+
+        function closeSchoolYearModal() {
+            const modal = document.getElementById('sy-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmAddSchoolYear() {
+            const name = document.getElementById('new-sy-name').value.trim();
+            if (!name) return;
+
+            const newSyId = `sy-${Date.now()}`;
+            const copyCurriculum = document.getElementById('copy-sy-curriculum').checked;
+
+            state.schoolYears.push({ id: newSyId, name });
+
+            if (copyCurriculum) {
+                const currentSYSubjects = state.subjects.filter(s => s.schoolYearId === state.currentSchoolYearId);
+                currentSYSubjects.forEach(sourceSub => {
+                    const newSubId = `sub-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+                    const copiedCompetencies = sourceSub.competencies.map((comp, idx) => ({
+                        ...comp,
+                        id: `comp-${newSubId}-${idx}-${Date.now()}`,
+                        schoolYearId: newSyId
+                    }));
+
+                    state.subjects.push({
+                        id: newSubId,
+                        name: sourceSub.name,
+                        schoolYearId: newSyId,
+                        competencies: copiedCompetencies
+                    });
+                });
+            }
+
+            state.currentSchoolYearId = newSyId;
+            saveToLocalStorage();
+            renderSchoolYears();
+            renderSubjects();
+            renderTermTabs();
+            renderCompetencies();
+            closeSchoolYearModal();
+        }
+
+        function changeTerm(termKey) {
+            state.currentTerm = termKey;
+            saveToLocalStorage();
+            renderTermTabs();
+            renderCompetencies();
+        }
+
+        function renderTermTabs() {
+            const activeLabel = document.getElementById('active-term-label');
+            const termMap = { 'T1': 'Term 1', 'T2': 'Term 2', 'T3': 'Term 3', 'Legacy': 'Legacy / Unassigned' };
+            if (activeLabel) activeLabel.innerText = termMap[state.currentTerm] || 'Term 1';
+
+            ['T1', 'T2', 'T3'].forEach(tKey => {
+                const btn = document.getElementById(`term-${tKey.toLowerCase()}-btn`);
+                if (!btn) return;
+                if (state.currentTerm === tKey) {
+                    btn.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all bg-blue-600 text-white shadow';
+                } else {
+                    btn.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white bg-slate-900/50 border border-slate-800';
+                }
+            });
+
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
+            const legacyBtn = document.getElementById('term-legacy-btn');
+            if (legacyBtn) {
+                const hasLegacy = subject && subject.competencies.some(c => c.term === 'Legacy');
+                if (hasLegacy) {
+                    legacyBtn.classList.remove('hidden');
+                    if (state.currentTerm === 'Legacy') {
+                        legacyBtn.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all bg-amber-600 text-white shadow';
+                    } else {
+                        legacyBtn.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all text-amber-400 bg-amber-500/10 border border-amber-500/20';
+                    }
+                } else {
+                    legacyBtn.classList.add('hidden');
+                    if (state.currentTerm === 'Legacy') state.currentTerm = 'T1';
+                }
+            }
+        }
+
+        function updateCompetencyTerm(compId, newTerm) {
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
+            if (!subject) return;
+            const comp = subject.competencies.find(c => c.id === compId);
+            if (comp) {
+                comp.term = newTerm;
+                saveToLocalStorage();
+                renderTermTabs();
+                renderCompetencies();
+            }
+        }
+
         function renderSubjects() {
             const nav = document.getElementById('subject-list');
+            if (!nav) return;
             nav.innerHTML = '';
-            state.subjects.forEach(sub => {
+
+            const filteredSubjects = state.subjects.filter(s => s.schoolYearId === state.currentSchoolYearId);
+            if (!filteredSubjects.find(s => s.id === state.currentSubjectId) && filteredSubjects.length > 0) {
+                state.currentSubjectId = filteredSubjects[0].id;
+            }
+
+            filteredSubjects.forEach(sub => {
                 const isActive = sub.id === state.currentSubjectId;
                 const btn = document.createElement('button');
                 btn.className = `w-full text-left px-4 py-2 rounded-lg transition-all flex items-center justify-between group ${isActive ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 font-medium' : 'text-slate-400 hover:bg-slate-800'}`;
@@ -458,8 +689,10 @@
 
         function renderCompetencies() {
             const container = document.getElementById('competency-container');
+            if (!container) return;
             container.innerHTML = '';
-            const subject = state.subjects.find(s => s.id === state.currentSubjectId);
+
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
             
             if (!subject) {
                 document.getElementById('current-subject').innerText = 'No Subject Selected';
@@ -468,7 +701,17 @@
 
             document.getElementById('current-subject').innerText = subject.name;
 
-            subject.competencies.forEach((comp, index) => {
+            const termCompetencies = subject.competencies.filter(c => (c.term || 'T1') === state.currentTerm);
+
+            if (termCompetencies.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'p-8 border-2 border-dashed border-slate-800 rounded-3xl text-center text-slate-500 text-sm';
+                emptyMsg.innerHTML = `<i class="fas fa-folder-open text-2xl mb-2 block"></i> No competencies added for ${state.currentTerm === 'Legacy' ? 'Legacy/Unassigned' : state.currentTerm}. Click "Add New Competency" below.`;
+                container.appendChild(emptyMsg);
+                return;
+            }
+
+            termCompetencies.forEach((comp) => {
                 const div = document.createElement('div');
                 div.className = 'glass p-6 rounded-2xl border-l-4 border-blue-500 shadow-xl relative group mb-6';
                 div.innerHTML = `
@@ -478,18 +721,26 @@
                             <button onclick="moveCompetency('${comp.id}', 'down')" class="text-slate-600 hover:text-blue-400 p-1"><i class="fas fa-chevron-down text-xs"></i></button>
                         </div>
                         <div class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div class="md:col-span-3">
+                            <div class="md:col-span-2">
                                 <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Competency Title</label>
                                 <input type="text" value="${comp.title}" onchange="updateCompetency('${comp.id}', 'title', this.value)"
                                        class="bg-transparent text-xl font-bold outline-none w-full border-b border-transparent focus:border-blue-500/50 pb-1">
                             </div>
                             <div>
-                                <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Teaching Hours</label>
+                                <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Assigned Term</label>
+                                <select onchange="updateCompetencyTerm('${comp.id}', this.value)" class="bg-slate-950 border border-slate-800 rounded-lg py-1 px-3 text-xs text-indigo-400 font-bold outline-none cursor-pointer w-full">
+                                    <option value="T1" ${comp.term === 'T1' ? 'selected' : ''}>Term 1</option>
+                                    <option value="T2" ${comp.term === 'T2' ? 'selected' : ''}>Term 2</option>
+                                    <option value="T3" ${comp.term === 'T3' ? 'selected' : ''}>Term 3</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Teaching Days / Hours</label>
                                 <input type="number" value="${comp.hours || 1}" onchange="updateCompetency('${comp.id}', 'hours', this.value)"
                                        class="bg-slate-950/50 border border-slate-800 rounded-lg py-1 px-3 w-full text-blue-400 outline-none focus:ring-1 ring-blue-500/30">
                             </div>
                         </div>
-                        <button onclick="deleteCompetency('${comp.id}')" class="p-2 text-slate-600 hover:text-red-400 transition-colors">
+                        <button onclick="deleteCompetency('${comp.id}')" class="p-2 text-slate-600 hover:text-red-400 transition-colors ml-4">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -523,42 +774,50 @@
 
         function selectSubject(id) {
             state.currentSubjectId = id;
+            saveToLocalStorage();
             renderSubjects();
+            renderTermTabs();
             renderCompetencies();
-        }
-
-        function addSubject() {
-            document.getElementById('new-subject-name').value = '';
-            const modal = document.getElementById('subject-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.getElementById('new-subject-name').focus();
-        }
-
-        function closeSubjectModal() {
-            document.getElementById('subject-modal').classList.add('hidden');
-            document.getElementById('subject-modal').classList.remove('flex');
         }
 
         function confirmAddSubject() {
             const name = document.getElementById('new-subject-name').value.trim();
             if (name) {
                 const id = Date.now().toString();
-                state.subjects.push({ id, name, competencies: [] });
+                state.subjects.push({
+                    id: id,
+                    name: name,
+                    schoolYearId: state.currentSchoolYearId,
+                    competencies: []
+                });
                 state.currentSubjectId = id;
                 saveToLocalStorage();
                 renderSubjects();
+                renderTermTabs();
                 renderCompetencies();
                 closeSubjectModal();
             }
         }
 
-        function deleteSubject(event, id) {
-            event.stopPropagation();
-            if (confirm('Delete this subject and all its competencies?')) {
-                state.subjects = state.subjects.filter(s => s.id !== id);
-                if (state.currentSubjectId === id && state.subjects.length > 0) {
-                    state.currentSubjectId = state.subjects[0].id;
+        function addCompetency() {
+            const subject = state.subjects.find(s => s.id === state.currentSubjectId && s.schoolYearId === state.currentSchoolYearId);
+            if (subject) {
+                const targetTerm = state.currentTerm === 'Legacy' ? 'T1' : state.currentTerm;
+                subject.competencies.push({
+                    id: Date.now().toString(),
+                    title: '',
+                    notes: '',
+                    hours: 1,
+                    term: targetTerm,
+                    schoolYearId: state.currentSchoolYearId,
+                    targetS1: true,
+                    targetS2: false,
+                    targetTerm: true
+                });
+                saveToLocalStorage();
+                renderTermTabs();
+                renderCompetencies();
+            }
                 }
                 saveToLocalStorage();
                 renderSubjects();
@@ -1456,8 +1715,11 @@
         }
 
         // Initial Render
+        migrateStateV6();
         updateTutorEngineModels();
+        renderSchoolYears();
         renderSubjects();
+        renderTermTabs();
         renderCompetencies();
         renderHistory();
 

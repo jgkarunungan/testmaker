@@ -293,7 +293,7 @@ const AppLogic = {
 
         if (!q || typeof q !== 'object') return warnings;
 
-        // 1. Near-identical option choices check (strip spaces & non-alphanumeric)
+        // 1. Option Structure & Weak Distractor Checks
         if (Array.isArray(q.options) && q.options.length === 4) {
             const strippedOpts = q.options.map(o => (typeof o === 'string' ? o.toLowerCase().replace(/[^\w]/g, '') : ''));
             const strippedSet = new Set(strippedOpts);
@@ -301,7 +301,6 @@ const AppLogic = {
                 warnings.push("Near-identical answer choices detected.");
             }
 
-            // 2. Check for weak distractor phrases ("all of the above", "none of the above", "both a and b")
             const weakPhraseFound = q.options.some(o => {
                 if (typeof o !== 'string') return false;
                 const lower = o.toLowerCase();
@@ -313,14 +312,49 @@ const AppLogic = {
             if (weakPhraseFound) {
                 warnings.push("Contains 'All/None of the above' style phrase; review distractor quality.");
             }
+
+            // Option Length Clue Detection
+            if (Number.isInteger(q.answer_index) && q.answer_index >= 0 && q.answer_index < 4) {
+                const lengths = q.options.map(o => (typeof o === 'string' ? o.trim().length : 0));
+                const correctLen = lengths[q.answer_index];
+                const otherLens = lengths.filter((_, i) => i !== q.answer_index);
+                const avgOther = otherLens.reduce((a, b) => a + b, 0) / 3;
+
+                if (correctLen > 40 && avgOther > 0 && correctLen > avgOther * 2.2) {
+                    warnings.push("Correct option is noticeably longer and more detailed than distractors (possible length giveaway clue).");
+                }
+            }
         }
 
-        // 3. Short question stem check (possible missing stimulus)
-        if (typeof q.question === 'string' && q.question.trim().length < 25) {
-            warnings.push("Short question stem (possible missing contextual stimulus).");
+        // 2. Short question stem check (possible missing stimulus)
+        if (typeof q.question === 'string') {
+            const stemTrimmed = q.question.trim();
+            if (stemTrimmed.length < 25) {
+                warnings.push("Short question stem (possible missing contextual stimulus).");
+            }
+
+            // Answer Leakage Detection (Check if stem directly states the correct option text verbatim)
+            if (Array.isArray(q.options) && Number.isInteger(q.answer_index) && q.answer_index >= 0 && q.answer_index < 4) {
+                const correctText = (q.options[q.answer_index] || '').trim();
+                if (correctText.length > 15 && stemTrimmed.toLowerCase().includes(correctText.toLowerCase())) {
+                    warnings.push("Possible answer leakage: Question stem appears to directly contain the correct answer text.");
+                }
+            }
+
+            // Bloom's Taxonomy Mismatch Check
+            const cogLevel = (q.cognitive_level || '').trim();
+            if (cogLevel === 'Analyzing' || cogLevel === 'Evaluating') {
+                const lower = stemTrimmed.toLowerCase();
+                const isSimpleRecall = /^(ano ang|sino ang|kailan|tukuyin|identify|what is|who was|when did|define)\b/i.test(lower);
+                const hasContextualKeyword = /sitwasyon|halimbawa|scenario|suriin|paano|bakit|compare|analyze|evaluate|dataset|evidence/i.test(lower);
+
+                if (isSimpleRecall && !hasContextualKeyword) {
+                    warnings.push("Possible Bloom's Taxonomy mismatch: Labeled as HOTS (" + cogLevel + "), but question stem resembles factual recall.");
+                }
+            }
         }
 
-        // 4. Duplicate question stem check across the assessment
+        // 3. Duplicate question stem check across the assessment
         if (typeof q.question === 'string' && Array.isArray(allQuestions) && allQuestions.length > 1) {
             const currentNormStem = q.question.trim().toLowerCase().replace(/[^\w]/g, '');
             const matchCount = allQuestions.filter(otherQ => {

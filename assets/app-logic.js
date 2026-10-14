@@ -195,6 +195,10 @@ const AppLogic = {
     },
 
     addToHistory(results, category) {
+        if (typeof window !== 'undefined' && typeof window.addToHistory === 'function') {
+            window.addToHistory(results, category);
+            return;
+        }
         const currentSubject = AppState.getCurrentSubject();
         const historyItem = {
             id: Date.now(),
@@ -203,8 +207,9 @@ const AppLogic = {
             category: category || (results[0]?.category || 'A'),
             data: results
         };
-        AppState.state.history.unshift(historyItem);
-        if (AppState.state.history.length > 20) AppState.state.history.pop();
+        const hist = AppState.state.history || [];
+        hist.unshift(historyItem);
+        if (hist.length > 20) hist.pop();
         AppState.save();
     },
 

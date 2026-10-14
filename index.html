@@ -547,28 +547,32 @@
     </div>
 
     <script>
+        const DEFAULT_SCHOOL_YEARS = [
+            { id: 'sy-2026-2027', name: 'SY 2026-2027' }
+        ];
+
+        const DEFAULT_SUBJECTS = [
+            {
+                id: '1',
+                name: 'Mathematics',
+                schoolYearId: 'sy-2026-2027',
+                competencies: [
+                    { id: 'c1', title: 'Quadratic Equations', notes: 'Focus on real-world applications of the quadratic formula.', hours: 1, term: 'T1', schoolYearId: 'sy-2026-2027', targetS1: true, targetS2: false, targetTerm: true }
+                ]
+            }
+        ];
+
         let state = {
-            schoolYears: [
-                { id: 'sy-2026-2027', name: 'SY 2026-2027' }
-            ],
-            currentSchoolYearId: localStorage.getItem('testmaker_current_sy') || 'sy-2026-2027',
-            currentSubjectId: localStorage.getItem('testmaker_current_subject') || '1',
-            currentTerm: localStorage.getItem('testmaker_current_term') || 'T1', // 'T1' | 'T2' | 'T3' | 'Legacy'
-            subjects: [
-                {
-                    id: '1',
-                    name: 'Mathematics',
-                    schoolYearId: 'sy-2026-2027',
-                    competencies: [
-                        { id: 'c1', title: 'Quadratic Equations', notes: 'Focus on real-world applications of the quadratic formula.', hours: 1, term: 'T1', schoolYearId: 'sy-2026-2027', targetS1: true, targetS2: false, targetTerm: true }
-                    ]
-                }
-            ],
-            apiKey: localStorage.getItem('gemini_api_key') || '',
-            selectedModel: localStorage.getItem('testmaker_model') || 'gemini-1.5-flash',
-            useFallback: localStorage.getItem('testmaker_use_fallback') !== 'false',
-            history: JSON.parse(localStorage.getItem('testmaker_history') || '[]'),
-            systemPrompt: localStorage.getItem('system_prompt') || `{
+            schoolYears: [],
+            currentSchoolYearId: '',
+            currentSubjectId: '',
+            currentTerm: 'T1',
+            subjects: [],
+            apiKey: '',
+            selectedModel: 'gemini-1.5-flash',
+            useFallback: true,
+            history: [],
+            systemPrompt: `{
   "role": "Expert Pedagogical Assessment Generator",
   "format": "Multiple Choice Questions",
   "config": {
@@ -589,80 +593,177 @@
   ]
 }`
         };
+        window.state = state;
 
-        // Non-destructive Migration & Data Recovery Engine v6
-        function migrateStateV6() {
-            // 1. Load saved school years if memory state is empty
+        function showStorageError(msg) {
+            let errBanner = document.getElementById('storage-error-banner');
+            if (!errBanner) {
+                errBanner = document.createElement('div');
+                errBanner.id = 'storage-error-banner';
+                errBanner.className = 'fixed bottom-4 right-4 z-[999] max-w-md p-4 bg-red-900/90 text-red-200 border border-red-500 rounded-2xl shadow-2xl text-xs flex items-center justify-between gap-3 backdrop-blur-md';
+                document.body.appendChild(errBanner);
+            }
+            errBanner.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-base"></i>
+                    <span>${msg}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-red-300 hover:text-white p-1"><i class="fas fa-times"></i></button>
+            `;
+            setTimeout(() => {
+                if (errBanner && errBanner.parentElement) errBanner.remove();
+            }, 8000);
+        }
+
+        // Non-destructive Migration & Data Recovery Engine v6.3
+        function loadAndMigrateState() {
+            let subjectsLoaded = false;
+            let schoolYearsLoaded = false;
+            let corruptedStorageDetected = false;
+
+            // 1. Load saved school years
             const savedSY = localStorage.getItem('testmaker_school_years');
-            if (savedSY && (!Array.isArray(state.schoolYears) || state.schoolYears.length === 0)) {
+            if (savedSY) {
                 try {
                     const parsedSY = JSON.parse(savedSY);
-                    if (Array.isArray(parsedSY) && parsedSY.length > 0) state.schoolYears = parsedSY;
-                } catch(e){}
+                    if (Array.isArray(parsedSY) && parsedSY.length > 0) {
+                        state.schoolYears = parsedSY;
+                        schoolYearsLoaded = true;
+                    }
+                } catch(e){
+                    console.error('Failed to parse testmaker_school_years:', e);
+                    corruptedStorageDetected = true;
+                }
             }
 
-            // 2. Load saved subjects if memory state is empty
+            // 2. Load saved subjects
             const savedState = localStorage.getItem('testmaker_state');
-            if (savedState && (!Array.isArray(state.subjects) || state.subjects.length === 0)) {
+            if (savedState) {
                 try {
                     const parsedState = JSON.parse(savedState);
-                    if (Array.isArray(parsedState) && parsedState.length > 0) {
+                    if (Array.isArray(parsedState)) {
                         state.subjects = parsedState;
+                        subjectsLoaded = true;
                     }
-                } catch(e){}
+                } catch(e){
+                    console.error('Failed to parse testmaker_state:', e);
+                    corruptedStorageDetected = true;
+                }
             }
 
-            // 3. Fallback to pre-import backup if state.subjects is empty or contains only default Math
-            const preImportBackup = localStorage.getItem('testmaker_pre_import_backup');
-            if (preImportBackup && (!Array.isArray(state.subjects) || state.subjects.length === 0 || (state.subjects.length === 1 && state.subjects[0].id === '1' && state.subjects[0].name === 'Mathematics'))) {
+            // 3. Fallback to pre-import backup if state.subjects was empty or missing
+            if (!subjectsLoaded || state.subjects.length === 0) {
+                const preImportBackup = localStorage.getItem('testmaker_pre_import_backup');
+                if (preImportBackup) {
+                    try {
+                        const backupObj = JSON.parse(preImportBackup);
+                        if (Array.isArray(backupObj.subjects) && backupObj.subjects.length > 0) {
+                            state.subjects = backupObj.subjects;
+                            subjectsLoaded = true;
+                        }
+                        if (Array.isArray(backupObj.schoolYears) && backupObj.schoolYears.length > 0 && !schoolYearsLoaded) {
+                            state.schoolYears = backupObj.schoolYears;
+                            schoolYearsLoaded = true;
+                        }
+                    } catch(e){}
+                }
+            }
+
+            // 4. Default fallbacks only if no saved data exists and no storage corruption was detected
+            if (!schoolYearsLoaded || !Array.isArray(state.schoolYears) || state.schoolYears.length === 0) {
+                state.schoolYears = JSON.parse(JSON.stringify(DEFAULT_SCHOOL_YEARS));
+            }
+
+            if (!subjectsLoaded && !corruptedStorageDetected) {
+                state.subjects = JSON.parse(JSON.stringify(DEFAULT_SUBJECTS));
+            }
+
+            // 5. Load settings & history
+            state.currentSchoolYearId = localStorage.getItem('testmaker_current_sy') || '';
+            state.currentSubjectId = localStorage.getItem('testmaker_current_subject') || '';
+            state.currentTerm = localStorage.getItem('testmaker_current_term') || 'T1';
+            state.apiKey = localStorage.getItem('gemini_api_key') || '';
+            state.selectedModel = localStorage.getItem('testmaker_model') || 'gemini-1.5-flash';
+            state.useFallback = localStorage.getItem('testmaker_use_fallback') !== 'false';
+            const savedPrompt = localStorage.getItem('system_prompt');
+            if (savedPrompt) state.systemPrompt = savedPrompt;
+
+            const savedHistory = localStorage.getItem('testmaker_history');
+            if (savedHistory) {
                 try {
-                    const backupObj = JSON.parse(preImportBackup);
-                    if (Array.isArray(backupObj.subjects) && backupObj.subjects.length > 0) {
-                        state.subjects = backupObj.subjects;
-                    }
-                    if (Array.isArray(backupObj.schoolYears) && backupObj.schoolYears.length > 0) {
-                        state.schoolYears = backupObj.schoolYears;
-                    }
+                    const parsedHistory = JSON.parse(savedHistory);
+                    if (Array.isArray(parsedHistory)) state.history = parsedHistory;
                 } catch(e){}
             }
 
-            // 4. Default SY if none present
-            if (!Array.isArray(state.schoolYears) || state.schoolYears.length === 0) {
-                state.schoolYears = [{ id: 'sy-2026-2027', name: 'SY 2026-2027' }];
-            }
-
-            if (!state.schoolYears.find(sy => sy.id === state.currentSchoolYearId)) {
+            // 6. Validate / normalize current school year selection
+            if (!state.currentSchoolYearId || !state.schoolYears.find(sy => sy.id === state.currentSchoolYearId)) {
                 state.currentSchoolYearId = state.schoolYears[0].id;
             }
 
-            // 5. Ensure all subjects & competencies have schoolYearId and term properties without deleting anything!
+            // 7. Ensure all subjects & competencies have required properties without deleting anything
             state.subjects.forEach(sub => {
-                if (!sub.schoolYearId) {
-                    sub.schoolYearId = state.schoolYears[0].id;
-                }
-                if (!Array.isArray(sub.competencies)) {
-                    sub.competencies = [];
-                }
-                sub.competencies.forEach(comp => {
+                if (!sub.id) sub.id = `sub-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+                if (!sub.schoolYearId) sub.schoolYearId = state.schoolYears[0].id;
+                if (!Array.isArray(sub.competencies)) sub.competencies = [];
+                sub.competencies.forEach((comp, idx) => {
+                    if (!comp.id) comp.id = `comp-${sub.id}-${idx}-${Date.now()}`;
                     if (!comp.schoolYearId) comp.schoolYearId = sub.schoolYearId;
                     if (!comp.term) comp.term = 'T1';
+                    if (comp.hours === undefined || comp.hours === null) comp.hours = 1;
+                    if (comp.targetS1 === undefined) comp.targetS1 = true;
+                    if (comp.targetS2 === undefined) comp.targetS2 = false;
+                    if (comp.targetTerm === undefined) comp.targetTerm = true;
+                    if (comp.notes === undefined) comp.notes = '';
                 });
             });
 
-            saveToLocalStorage();
+            // 8. Validate / normalize current subject selection
+            const currentSYSubjects = state.subjects.filter(s => s.schoolYearId === state.currentSchoolYearId);
+            if (!currentSYSubjects.find(s => s.id === state.currentSubjectId)) {
+                state.currentSubjectId = currentSYSubjects.length > 0 ? currentSYSubjects[0].id : null;
+            }
+
+            // 9. Persist safe state
+            if (!corruptedStorageDetected) {
+                saveToLocalStorage();
+            } else {
+                showStorageError("Notice: Storage parsing warning detected. Unsaved data recovery options are available in Workspace import.");
+            }
+        }
+
+        function migrateStateV6() {
+            loadAndMigrateState();
         }
 
         function saveToLocalStorage() {
-            localStorage.setItem('testmaker_state', JSON.stringify(state.subjects));
-            localStorage.setItem('testmaker_school_years', JSON.stringify(state.schoolYears));
-            localStorage.setItem('testmaker_current_sy', state.currentSchoolYearId);
-            localStorage.setItem('testmaker_current_subject', state.currentSubjectId);
-            localStorage.setItem('testmaker_current_term', state.currentTerm);
-            localStorage.setItem('testmaker_model', state.selectedModel);
-            localStorage.setItem('testmaker_use_fallback', state.useFallback);
-            localStorage.setItem('testmaker_history', JSON.stringify(state.history));
-            localStorage.setItem('gemini_api_key', state.apiKey);
-            localStorage.setItem('system_prompt', state.systemPrompt);
+            try {
+                const subjectsJson = JSON.stringify(state.subjects);
+                const schoolYearsJson = JSON.stringify(state.schoolYears);
+                const historyJson = JSON.stringify(state.history);
+
+                localStorage.setItem('testmaker_state', subjectsJson);
+                localStorage.setItem('testmaker_school_years', schoolYearsJson);
+                if (state.currentSchoolYearId) localStorage.setItem('testmaker_current_sy', state.currentSchoolYearId);
+                if (state.currentSubjectId) localStorage.setItem('testmaker_current_subject', state.currentSubjectId);
+                if (state.currentTerm) localStorage.setItem('testmaker_current_term', state.currentTerm);
+                if (state.selectedModel) localStorage.setItem('testmaker_model', state.selectedModel);
+                localStorage.setItem('testmaker_use_fallback', String(state.useFallback));
+                localStorage.setItem('testmaker_history', historyJson);
+                if (state.apiKey !== undefined) localStorage.setItem('gemini_api_key', state.apiKey);
+                if (state.systemPrompt !== undefined) localStorage.setItem('system_prompt', state.systemPrompt);
+
+                const readBack = localStorage.getItem('testmaker_state');
+                if (readBack !== subjectsJson) {
+                    console.warn('Storage verification check mismatch.');
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                console.error('Failed to save to browser storage:', e);
+                showStorageError('Failed to save changes to browser storage: ' + (e.message || 'Quota or access error'));
+                return false;
+            }
         }
 
         // School Year & Term Functions
@@ -860,7 +961,7 @@
                         <div class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="md:col-span-2">
                                 <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Competency Title</label>
-                                <input type="text" value="${comp.title}" onchange="updateCompetency('${comp.id}', 'title', this.value)"
+                                <input type="text" value="${comp.title}" oninput="updateCompetency('${comp.id}', 'title', this.value)"
                                        class="bg-transparent text-xl font-bold outline-none w-full border-b border-transparent focus:border-blue-500/50 pb-1">
                             </div>
                             <div>
@@ -873,7 +974,7 @@
                             </div>
                             <div>
                                 <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Teaching Days / Hours</label>
-                                <input type="number" value="${comp.hours || 1}" onchange="updateCompetency('${comp.id}', 'hours', this.value)"
+                                <input type="number" value="${comp.hours || 1}" oninput="updateCompetency('${comp.id}', 'hours', this.value)"
                                        class="bg-slate-950/50 border border-slate-800 rounded-lg py-1 px-3 w-full text-blue-400 outline-none focus:ring-1 ring-blue-500/30">
                             </div>
                         </div>
@@ -900,7 +1001,7 @@
 
                     <div>
                         <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 block">AI Guidance & Notes</label>
-                        <textarea onchange="updateCompetency('${comp.id}', 'notes', this.value)"
+                        <textarea oninput="updateCompetency('${comp.id}', 'notes', this.value)"
                                   placeholder="Describe how AI should generate questions for this..."
                                   class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-sm text-slate-300 outline-none h-32 focus:ring-2 ring-blue-500/20 transition-all">${comp.notes}</textarea>
                     </div>

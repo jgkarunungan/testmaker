@@ -306,6 +306,94 @@ RETURN ONLY THE UPDATED JSON OBJECT. NO MARKDOWN.`;
 }
 
 /**
+ * Generates a Micro-Batch of Multiple Choice Questions for a single competency (Phase 8.1.2)
+ */
+async function callGenerateMCQMicroBatch(inputs) {
+    const { apiKey, subject, competency, notes, targetSlots, acceptedQuestionsSummary = [], category, systemPrompt, selectedModel, thinkingLevel, onThrottled } = inputs;
+
+    const formattedNotes = (notes && typeof notes === 'string' && notes.trim().length > 0)
+        ? notes.trim()
+        : "[NO SPECIFIC TEACHER NOTES PROVIDED - Assess learning competency broadly within curriculum boundaries.]";
+
+    const slotTargetsFormatted = targetSlots.map((slot, idx) =>
+        `Item ${idx + 1} (Slot ID ${slot.slotId}): Required Bloom's Cognitive Level: "${slot.plannedBloomLevel}"`
+    ).join('\n');
+
+    const previousSummaryText = (Array.isArray(acceptedQuestionsSummary) && acceptedQuestionsSummary.length > 0)
+        ? acceptedQuestionsSummary.map((qText, idx) => `- Previously Accepted Item ${idx + 1}: "${qText.substring(0, 100)}..."`).join('\n')
+        : "[No previous items in this session yet]";
+
+    const prompt = `
+Act as a Master Assessment Designer and Subject Matter Specialist in ${subject}.
+Target Audience: Category ${category} Senior High School Students.
+
+SYSTEM CONFIGURATION:
+${JSON.stringify(systemPrompt, null, 2)}
+
+1. AUTHORITATIVE TARGET & INSTRUCTIONAL BOUNDARIES:
+   - SUBJECT: "${subject}"
+   - LEARNING COMPETENCY: "${competency}"
+   - TEACHER'S AI GUIDANCE & NOTES (AUTHORITATIVE INSTRUCTIONAL SCOPE):
+     <ai_guidance_and_notes>
+     ${formattedNotes}
+     </ai_guidance_and_notes>
+
+2. MICRO-BATCH TARGET SLOTS (Generate EXACTLY ${targetSlots.length} items):
+   ${slotTargetsFormatted}
+
+3. PREVENT QUESTION REPETITION & DUPLICATE SCENARIOS:
+   Avoid creating scenarios or question stems similar to these previously accepted items:
+   ${previousSummaryText}
+
+4. MANDATORY INSTRUCTIONAL LANGUAGE & STIMULUS RULES:
+   - Use primary language of competency/notes.
+   - Every question MUST begin with an educational lead-in stimulus without giving away the correct answer text.
+   - All 4 options must be comparable in word count, detail, and grammatical structure.
+   - Strictly forbid "All/None of the above" or combined choices.
+
+5. REQUIRED JSON OUTPUT SCHEMA:
+   Return ONLY a valid JSON object matching this schema (NO MARKDOWN, NO COMMENTS):
+   {
+     "questions": [
+       {
+         "question": "Educational stimulus followed by clear question stem...",
+         "options": [
+           "Option A text",
+           "Option B text",
+           "Option C text",
+           "Option D text"
+         ],
+         "answer_index": 0,
+         "cognitive_level": "Remembering",
+         "rationale": "Clear pedagogical explanation of why option index 0 is correct and why distractors represent common misconceptions. DO NOT reference option letters in rationales."
+       }
+     ]
+   }
+`;
+
+    // Rate-limit scheduling check BEFORE sending request
+    let schedulerReqRecord = null;
+    if (typeof AIScheduler !== 'undefined' && typeof AIScheduler.scheduleRequest === 'function') {
+        schedulerReqRecord = await AIScheduler.scheduleRequest(prompt, {
+            model: selectedModel,
+            onThrottled: onThrottled
+        });
+    }
+
+    const modelObj = (typeof getModelConfig === 'function') ? getModelConfig(selectedModel) : { name: selectedModel };
+    const result = await executeAiRequest(apiKey, prompt, [modelObj], thinkingLevel || 'high');
+
+    // Reconcile scheduler token accounting if usageMetadata provided
+    if (schedulerReqRecord && result && result.diagnostics && result.diagnostics.usageMetadata) {
+        if (typeof AIScheduler !== 'undefined' && typeof AIScheduler.reconcileUsage === 'function') {
+            AIScheduler.reconcileUsage(schedulerReqRecord, result.diagnostics.usageMetadata);
+        }
+    }
+
+    return result;
+}
+
+/**
  * Internal helper to handle the Fetch API, diagnostics, and error reporting
  */
 async function executeAiRequest(apiKey, prompt, models, thinkingLevel = 'high') {

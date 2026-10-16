@@ -1,5 +1,5 @@
 /**
- * AI REVIEWER MODULE (Phase 8.1 - Independent AI Quality Reviewer)
+ * AI REVIEWER MODULE (Phase 8.1.3 - Cognitive Calibration, MCQ Integrity & Quality Reviewer)
  * STRICTLY REVIEW-ONLY. DOES NOT MUTATE OR AUTOMATICALLY REWRITE EXAMINATIONS.
  */
 
@@ -106,12 +106,14 @@ const AIReviewer = {
         let replaceCount = 0;
         let teacherReviewCount = 0;
         let unreviewedCount = 0;
+        let incompleteReviewCount = 0;
 
         let discrepancyCount = 0;
         let cognitiveMismatchCount = 0;
         let weakDistractorCount = 0;
         let answerLeakageCount = 0;
         let conceptOverlapCount = 0;
+        let rationaleContradictionCount = 0;
 
         const allQuestionsList = Array.from(originalItemMap.values()).map(o => o.question);
 
@@ -127,6 +129,7 @@ const AIReviewer = {
                     options: origQuestion.options,
                     originalAnswerIndex: origQuestion.answer_index,
                     originalCognitiveLevel: origQuestion.cognitive_level,
+                    normalizedStatus: "UNREVIEWED",
                     finalStatus: "UNREVIEWED",
                     solvedIndex: null,
                     defensibleIndices: [],
@@ -137,6 +140,7 @@ const AIReviewer = {
                     weakDistractors: false,
                     answerLeakage: false,
                     conceptOverlap: false,
+                    rationaleContradiction: false,
                     stimulusQuality: 'UNCHECKED',
                     stemClarity: 'UNCHECKED',
                     distractorAssessment: null,
@@ -154,12 +158,14 @@ const AIReviewer = {
             if (processedReview.weakDistractors) weakDistractorCount++;
             if (processedReview.answerLeakage) answerLeakageCount++;
             if (processedReview.conceptOverlap) conceptOverlapCount++;
+            if (processedReview.rationaleContradiction) rationaleContradictionCount++;
 
             switch (processedReview.finalStatus) {
                 case "KEEP": keepCount++; break;
                 case "IMPROVE": improveCount++; break;
                 case "REPLACE": replaceCount++; break;
                 case "TEACHER_REVIEW": teacherReviewCount++; break;
+                case "INCOMPLETE_REVIEW": incompleteReviewCount++; break;
             }
 
             itemReports.push({
@@ -169,9 +175,13 @@ const AIReviewer = {
                 options: origQuestion.options,
                 originalAnswerIndex: origQuestion.answer_index,
                 originalCognitiveLevel: origQuestion.cognitive_level,
+                originalRationale: origQuestion.rationale || '',
                 ...processedReview
             });
         });
+
+        // Perform Examination-Wide Checks across all items
+        const examWideFindings = this.performExaminationWideChecks(itemReports, category);
 
         this.isReviewing = false;
         this.currentReport = {
@@ -186,12 +196,15 @@ const AIReviewer = {
                 replaceCount,
                 teacherReviewCount,
                 unreviewedCount,
+                incompleteReviewCount,
                 discrepancyCount,
                 cognitiveMismatchCount,
                 weakDistractorCount,
                 answerLeakageCount,
-                conceptOverlapCount
+                conceptOverlapCount,
+                rationaleContradictionCount
             },
+            examWideFindings,
             itemReports
         };
 
@@ -199,54 +212,42 @@ const AIReviewer = {
     },
 
     /**
-     * Builds the Blind Review Batch Prompt.
+     * Builds the Calibrated Blind Review Batch Prompt (Phase 8.1.3).
      * EXCLUDES answer_index, correct letter, and rationale.
      */
     buildBlindReviewBatchPrompt(itemsBatch, subjectName, category) {
         return `
-Act as an Independent Master Educational Assessment Auditor and Curriculum Review Specialist in ${subjectName}.
+Act as an Independent Master Educational Assessment Auditor, Revised Bloom's Taxonomy Specialist, and Senior High School Curriculum Specialist in ${subjectName}.
 
 CRITICAL BLIND EVALUATION DIRECTIVE:
 You are reviewing multiple-choice test items generated for Category ${category} Senior High School students.
 You are NOT given the designated answer key or rationale.
 You MUST analyze each question BLINDLY and solve it independently using ONLY the provided question text, options, competency, and teacher notes.
 
-PEDAGOGICAL & ASSESSMENT EVALUATION STANDARDS:
-1. INDEPENDENT ANSWER VERIFICATION:
-   - Solve the question independently without guessing or making unsupported assumptions.
-   - Identify the option index (0, 1, 2, or 3) that is unambiguously and defensibly correct based strictly on taught material.
-   - If EXACTLY ONE option is correct, set independent_best_answer_index to that index (0..3) and defensible_answer_indices to [index].
-   - If MULTIPLE options are defensibly correct, set independent_best_answer_index to null and defensible_answer_indices to all defensible indices (e.g. [0, 2]).
-   - If NO option is defensibly correct, set independent_best_answer_index to null and defensible_answer_indices to [].
-   - Set answer_uniqueness_status to "UNIQUE_CORRECT", "MULTIPLE_DEFENSIBLE", "NO_DEFENSIBLE", or "INSUFFICIENT_INFORMATION".
+STRICT MULTIPLE-CHOICE FORMAT REQUIREMENT:
+- All items MUST be 4-option multiple-choice questions (indices 0, 1, 2, 3).
+- Exactly ONE option must be defensibly correct.
 
-2. DISTRACTOR PLAUSIBILITY & CREDIBILITY:
-   - Evaluate EACH of the 3 incorrect options.
-   - A strong distractor must represent a believable student misconception, realistic misapplication, or incomplete reasoning.
-   - Flag distractors that are absurd, completely unrelated, mere opposites, or easily dismissible without subject knowledge.
+REVISED BLOOM'S COGNITIVE DIFFICULTY CALIBRATION RUBRIC (SENIOR HIGH SCHOOL):
+- "Remembering": Straightforward recall or recognition of taught facts/terms. Accessible and direct, testing preparation. Do NOT penalize Remembering items for being direct unless distractors are absurd or choices contain answer giveaways.
+- "Understanding": Explaining, interpreting, or comparing taught concepts. Must not simply repeat the stimulus statement verbatim.
+- "Applying": Using taught principles in a realistic Senior High School scenario.
+- "Analyzing": Examining relationships, assumptions, evidence, or cause/consequence. Must require analytical mental operation.
+- "Evaluating": Judging alternatives against explicit taught criteria. Must present credible options with exactly ONE best choice.
 
-3. REVISED BLOOM'S TAXONOMY RIGOR:
-   - Classify actual_cognitive_level (Remembering, Understanding, Applying, Analyzing, Evaluating) based SOLELY on the required mental operation, NOT action verbs.
-   - Flag "False HOTS" where a factual recall item is falsely labeled as Analyzing or Evaluating.
+MANDATORY DISTRACTOR-BY-DISTRACTOR EVALUATION:
+You MUST evaluate EACH of the 4 options individually in "distractor_assessment" under keys "0", "1", "2", and "3":
+- Indicate whether option is plausible for a partially knowledgeable student.
+- State the specific misconception or reasoning error represented by that option.
 
-4. LEARNING WHILE TESTING & STIMULUS DESIGN:
-   - Check if the stem begins with an educational lead-in stimulus.
-   - Flag answer leakage if the stimulus states or strongly paraphrases the correct answer text.
-
-5. STEM CLARITY & TASK DEFINITION:
-   - Verify that the stem defines a clear, unambiguous task for the student.
-
-6. TEACHER GUIDANCE & INSTRUCTIONAL SCOPE:
-   - Verify that all required concepts remain strictly within the provided teacher AI guidance & notes.
-
-7. ITEM RECOMMENDATION STATUS:
-   - "KEEP": No essential defects found. Unique correct answer, credible distractors, clear stimulus, appropriate cognitive level, within notes scope.
-   - "IMPROVE": Minor repairable defects (e.g. weak distractors, option length giveaway, short stem, minor scope drift).
-   - "REPLACE": Fundamental validity defects (e.g. multiple correct answers, no correct answer, factual error, severe answer leakage, missing task).
-   - "TEACHER_REVIEW": Ambiguous domain logic or uncertain cognitive ceiling requiring human judgment.
-
-HARD FAILURE RULE FOR "KEEP":
-You MUST NOT assign "KEEP" if an item has multiple correct answers, no correct answer, factual error, severe answer leakage, or untaught scope violation.
+RECOMMENDED STATUS OPTIONS:
+- "KEEP": Valid 4-option MCQ, cognitively aligned, meaningful challenge, credible distractors, no essential defects.
+- "IMPROVE_TOO_TRIVIAL": Correct level but excessively obvious due to absurd distractors, answer clues, or trivial choices.
+- "IMPROVE_TOO_DIFFICULT": Excessive complexity, unfamiliar required concepts, or graduate-level reading burden.
+- "IMPROVE_COGNITIVE_MISMATCH": Required mental operation does not match assigned cognitive level (e.g. factual recall falsely labeled Analyzing).
+- "IMPROVE_OTHER": Repairable option length giveaway, minor clarity issue, or minor scope drift.
+- "REPLACE": Fundamental validity error (multiple correct answers, no correct answer, unanswerable task, severe answer leakage, or non-MCQ format).
+- "TEACHER_REVIEW": Domain ambiguity or uncertain cognitive ceiling requiring human judgment.
 
 JSON OUTPUT SCHEMA:
 Return ONLY a valid JSON object matching this schema (NO MARKDOWN, NO COMMENTS):
@@ -258,11 +259,19 @@ Return ONLY a valid JSON object matching this schema (NO MARKDOWN, NO COMMENTS):
       "defensible_answer_indices": [0],
       "answer_uniqueness_status": "UNIQUE_CORRECT",
       "actual_cognitive_level": "Remembering",
+      "difficulty_appropriateness": "APPROPRIATE_SHS",
+      "shs_suitability": true,
       "competency_alignment": true,
       "instructional_coverage": true,
       "language_consistency": true,
       "stimulus_quality": "STRONG",
       "stem_clarity": "CLEAR",
+      "distractor_assessment": {
+        "0": { "plausible": false, "misconception": "Correct answer choice" },
+        "1": { "plausible": true, "misconception": "Believable misconception regarding subjective preference" },
+        "2": { "plausible": true, "misconception": "Confuses popularity with empirical truth" },
+        "3": { "plausible": true, "misconception": "Confuses speculation with fact" }
+      },
       "option_length_warning": false,
       "concept_overlap_warning": false,
       "recommended_status": "KEEP",
@@ -271,11 +280,10 @@ Return ONLY a valid JSON object matching this schema (NO MARKDOWN, NO COMMENTS):
           "criterion": "Distractor Plausibility",
           "severity": "WARNING",
           "explanation": "Option C is obviously absurd.",
-          "suggested_correction": "Replace Option C with a plausible misconception regarding..."
+          "suggested_correction": "Replace Option C with a plausible misconception."
         }
       ],
-      "reviewer_explanation": "Concise summary of findings.",
-      "review_uncertainty": "LOW"
+      "reviewer_explanation": "Concise summary of pedagogical audit."
     }
   ]
 }
@@ -300,16 +308,53 @@ ${JSON.stringify(itemsBatch, null, 2)}
     },
 
     /**
-     * Post-processes AI review findings with application-side discrepancy analysis & hard failure enforcement.
+     * Post-processes AI review findings with application-side discrepancy analysis, rationale checks, and hard failure enforcement.
      */
     applyHardFailureRulesAndDiscrepancies(aiReview, origQuestion, allQuestionsList) {
         const issues = Array.isArray(aiReview.issues) ? [...aiReview.issues] : [];
-        let recommendedStatus = (aiReview.recommended_status || 'TEACHER_REVIEW').toUpperCase();
-        if (!['KEEP', 'IMPROVE', 'REPLACE', 'TEACHER_REVIEW'].includes(recommendedStatus)) {
-            recommendedStatus = 'TEACHER_REVIEW';
+
+        let normalizedStatus = (aiReview.recommended_status || 'TEACHER_REVIEW').toUpperCase();
+        if (!['KEEP', 'IMPROVE_TOO_TRIVIAL', 'IMPROVE_TOO_DIFFICULT', 'IMPROVE_COGNITIVE_MISMATCH', 'IMPROVE_OTHER', 'IMPROVE', 'REPLACE', 'TEACHER_REVIEW'].includes(normalizedStatus)) {
+            normalizedStatus = 'TEACHER_REVIEW';
         }
 
-        // 1. Blind Answer Key Comparison
+        // Map normalized status to primary UI status (KEEP, IMPROVE, REPLACE, TEACHER_REVIEW, INCOMPLETE_REVIEW)
+        let finalStatus = 'TEACHER_REVIEW';
+        if (normalizedStatus === 'KEEP') finalStatus = 'KEEP';
+        else if (normalizedStatus.startsWith('IMPROVE')) finalStatus = 'IMPROVE';
+        else if (normalizedStatus === 'REPLACE') finalStatus = 'REPLACE';
+        else if (normalizedStatus === 'TEACHER_REVIEW') finalStatus = 'TEACHER_REVIEW';
+
+        // 1. Mandatory Schema Validation: Distractor-by-Distractor Assessment
+        const distAss = aiReview.distractor_assessment;
+        const hasFullDistractorEval = distAss && typeof distAss === 'object' &&
+            ('0' in distAss) && ('1' in distAss) && ('2' in distAss) && ('3' in distAss);
+
+        if (!hasFullDistractorEval) {
+            finalStatus = 'INCOMPLETE_REVIEW';
+            normalizedStatus = 'INCOMPLETE_REVIEW';
+            issues.unshift({
+                criterion: "Review Schema Completeness",
+                severity: "WARNING",
+                explanation: "AI reviewer output omitted mandatory per-option distractor evaluations.",
+                suggested_correction: "Re-run review for complete item audit."
+            });
+        }
+
+        // 2. Format Integrity: Check 4-Option MCQ Requirement
+        const hasFourOptions = Array.isArray(origQuestion.options) && origQuestion.options.length === 4;
+        if (!hasFourOptions) {
+            finalStatus = 'REPLACE';
+            normalizedStatus = 'REPLACE';
+            issues.unshift({
+                criterion: "Multiple-Choice Format Failure",
+                severity: "CRITICAL",
+                explanation: `Question must contain exactly 4 answer options (found ${Array.isArray(origQuestion.options) ? origQuestion.options.length : 0}).`,
+                suggested_correction: "Reconstruct item as a standard 4-option multiple-choice question."
+            });
+        }
+
+        // 3. Blind Answer Key Comparison
         const solvedIndex = (Number.isInteger(aiReview.independent_best_answer_index) && aiReview.independent_best_answer_index >= 0 && aiReview.independent_best_answer_index <= 3)
             ? aiReview.independent_best_answer_index
             : null;
@@ -326,7 +371,7 @@ ${JSON.stringify(itemsBatch, null, 2)}
             });
         }
 
-        // 2. Answer Uniqueness Check
+        // 4. Answer Uniqueness Check
         const uniquenessStatus = aiReview.answer_uniqueness_status || 'UNIQUE_CORRECT';
         if (uniquenessStatus !== 'UNIQUE_CORRECT' || defensibleIndices.length !== 1) {
             issues.unshift({
@@ -337,19 +382,40 @@ ${JSON.stringify(itemsBatch, null, 2)}
             });
         }
 
-        // 3. Cognitive Level Comparison
+        // 5. Cognitive Level Comparison
         const actualLevel = aiReview.actual_cognitive_level || origQuestion.cognitive_level || 'Remembering';
         const cognitiveLevelMismatch = (actualLevel !== origQuestion.cognitive_level);
         if (cognitiveLevelMismatch) {
+            if (normalizedStatus === 'KEEP') normalizedStatus = 'IMPROVE_COGNITIVE_MISMATCH';
             issues.push({
                 criterion: "Cognitive Level Mismatch",
                 severity: "WARNING",
-                explanation: `Declared cognitive level is "${origQuestion.cognitive_level}", but actual mental operation requires "${actualLevel}".`,
+                explanation: `Declared cognitive level is "${origQuestion.cognitive_level}", but actual required mental operation is "${actualLevel}".`,
                 suggested_correction: "Update cognitive level label or adjust question cognitive demand."
             });
         }
 
-        // 4. Local Deterministic Heuristic Checks Integration
+        // 6. Mandatory Rationale Validation (Position Contradiction Check)
+        let rationaleContradiction = false;
+        const rationaleText = origQuestion.rationale || '';
+        if (rationaleText.trim().length > 0) {
+            // Match phrases like "Option A is correct", "Choice C is the answer", "Letter B"
+            const matchLetter = rationaleText.match(/\b(?:option|choice|letter)\s+([a-d])\b/i);
+            if (matchLetter && matchLetter[1]) {
+                const referencedLetterIdx = matchLetter[1].toUpperCase().charCodeAt(0) - 65;
+                if (referencedLetterIdx !== origQuestion.answer_index) {
+                    rationaleContradiction = true;
+                    issues.unshift({
+                        criterion: "Rationale Position Contradiction",
+                        severity: "CRITICAL",
+                        explanation: `Rationale text references Option ${matchLetter[1].toUpperCase()}, which contradicts the recorded answer key position (Option ${String.fromCharCode(65 + origQuestion.answer_index)}).`,
+                        suggested_correction: "Revise rationale to describe answer content rather than option position letters."
+                    });
+                }
+            }
+        }
+
+        // 7. Local Deterministic Heuristic Checks Integration
         let weakDistractors = false;
         let answerLeakage = false;
         let conceptOverlap = false;
@@ -372,16 +438,18 @@ ${JSON.stringify(itemsBatch, null, 2)}
             });
         }
 
-        // 5. HARD FAILURE RULE ENFORCEMENT
-        // An item MUST NOT receive KEEP if it has critical defects or answer key discrepancies!
-        const hasCriticalIssue = issues.some(i => i.severity === 'CRITICAL') || answerKeyDiscrepancy || defensibleIndices.length !== 1 || answerLeakage;
+        // 8. HARD FAILURE RULE ENFORCEMENT
+        // An item MUST NOT receive KEEP if it has critical defects, answer key discrepancies, or rationale contradictions!
+        const hasCriticalIssue = issues.some(i => i.severity === 'CRITICAL') || answerKeyDiscrepancy || defensibleIndices.length !== 1 || answerLeakage || rationaleContradiction || !hasFourOptions;
 
-        if (recommendedStatus === 'KEEP' && hasCriticalIssue) {
-            recommendedStatus = (defensibleIndices.length !== 1 || answerKeyDiscrepancy) ? 'REPLACE' : 'IMPROVE';
+        if (finalStatus === 'KEEP' && hasCriticalIssue) {
+            finalStatus = (defensibleIndices.length !== 1 || answerKeyDiscrepancy || !hasFourOptions) ? 'REPLACE' : 'IMPROVE';
+            if (normalizedStatus === 'KEEP') normalizedStatus = 'IMPROVE_OTHER';
         }
 
         return {
-            finalStatus: recommendedStatus,
+            normalizedStatus,
+            finalStatus,
             solvedIndex,
             defensibleIndices,
             uniquenessStatus,
@@ -391,12 +459,65 @@ ${JSON.stringify(itemsBatch, null, 2)}
             weakDistractors,
             answerLeakage,
             conceptOverlap,
+            rationaleContradiction,
+            difficultyAppropriateness: aiReview.difficulty_appropriateness || 'APPROPRIATE_SHS',
+            shsSuitability: aiReview.shs_suitability !== false,
             stimulusQuality: aiReview.stimulus_quality || 'STRONG',
             stemClarity: aiReview.stem_clarity || 'CLEAR',
-            distractorAssessment: aiReview.distractor_assessment || null,
+            distractorAssessment: distAss || null,
             issues,
             reviewerExplanation: aiReview.reviewer_explanation || "Reviewed by AI."
         };
+    },
+
+    /**
+     * Performs Examination-Wide Quality Checks (Cross-item scenario overlap, option length patterns, TOS alignment).
+     */
+    performExaminationWideChecks(itemReports, category) {
+        const warnings = [];
+
+        // 1. Check for systematic option length giveaways (correct answer longest in > 60% of items)
+        let longestCorrectCount = 0;
+        itemReports.forEach(item => {
+            if (Array.isArray(item.options) && Number.isInteger(item.originalAnswerIndex) && item.options.length === 4) {
+                const correctLen = (item.options[item.originalAnswerIndex] || '').trim().length;
+                const otherLens = item.options.filter((_, i) => i !== item.originalAnswerIndex).map(o => (o || '').trim().length);
+                const maxOther = Math.max(...otherLens);
+                if (correctLen > maxOther * 1.5) {
+                    longestCorrectCount++;
+                }
+            }
+        });
+
+        if (itemReports.length >= 5 && (longestCorrectCount / itemReports.length) > 0.60) {
+            warnings.push({
+                type: "OPTION_LENGTH_GIVEAWAY_PATTERN",
+                title: "Systematic Option Length Giveaway Pattern",
+                explanation: `Correct answer option is noticeably longer and more detailed than distractors in ${Math.round((longestCorrectCount/itemReports.length)*100)}% of questions.`
+            });
+        }
+
+        // 2. Check for cross-item stem / scenario duplication
+        const stemMap = new Map();
+        itemReports.forEach(item => {
+            const normStem = (item.questionStem || '').trim().toLowerCase().replace(/[^\w]/g, '');
+            if (normStem.length > 15) {
+                if (!stemMap.has(normStem)) stemMap.set(normStem, []);
+                stemMap.get(normStem).push(item.itemId);
+            }
+        });
+
+        stemMap.forEach((itemIds, normStem) => {
+            if (itemIds.length > 1) {
+                warnings.push({
+                    type: "CROSS_ITEM_DUPLICATION",
+                    title: "Cross-Item Scenario Duplication",
+                    explanation: `Near-identical question scenario detected across items: [${itemIds.join(', ')}].`
+                });
+            }
+        });
+
+        return warnings;
     },
 
     /**
@@ -415,6 +536,7 @@ ${JSON.stringify(itemsBatch, null, 2)}
                 case 'IMPROVE': return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30';
                 case 'REPLACE': return 'bg-red-500/10 text-red-400 border-red-500/30';
                 case 'TEACHER_REVIEW': return 'bg-purple-500/10 text-purple-300 border-purple-500/30';
+                case 'INCOMPLETE_REVIEW': return 'bg-amber-500/10 text-amber-300 border-amber-500/30';
                 default: return 'bg-slate-800 text-slate-400 border-slate-700';
             }
         };
@@ -423,7 +545,7 @@ ${JSON.stringify(itemsBatch, null, 2)}
             <div class="flex flex-wrap justify-between items-center gap-4 mb-6 border-b border-slate-800 pb-4">
                 <div>
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                        <i class="fas fa-microscope text-purple-400"></i> AI Quality Review Summary Report
+                        <i class="fas fa-microscope text-purple-400"></i> AI Quality Review Summary Report (Phase 8.1.3)
                     </h3>
                     <p class="text-xs text-slate-400 mt-1">
                         Independent pedagogical audit performed via <strong class="text-blue-400">${report.reviewerModel}</strong>
@@ -460,18 +582,19 @@ ${JSON.stringify(itemsBatch, null, 2)}
                 </div>
             </div>
 
-            <!-- Discrepancy & Critical Findings Notice -->
-            ${summary.discrepancyCount > 0 ? `
-                <div class="p-4 bg-red-900/30 border border-red-500/50 rounded-2xl mb-6 flex items-start gap-3">
-                    <i class="fas fa-exclamation-triangle text-red-400 text-lg mt-0.5"></i>
-                    <div class="text-xs text-red-200">
-                        <strong class="text-red-400 font-bold block text-sm mb-0.5">Answer Key Discrepancies Detected (${summary.discrepancyCount})</strong>
-                        The independent blind AI solver arrived at a different defensible answer than the generator's designated key. Review these items carefully before administering the test.
+            <!-- Examination-Wide Findings & Discrepancy Alerts -->
+            ${(summary.discrepancyCount > 0 || summary.rationaleContradictionCount > 0 || (report.examWideFindings && report.examWideFindings.length > 0)) ? `
+                <div class="p-4 bg-red-900/30 border border-red-500/50 rounded-2xl mb-6 space-y-2">
+                    <div class="font-bold text-red-400 text-xs flex items-center gap-1.5">
+                        <i class="fas fa-exclamation-triangle"></i> Examination-Wide Findings & Critical Alerts
                     </div>
+                    ${summary.discrepancyCount > 0 ? `<p class="text-xs text-red-200">• <strong>Answer Key Discrepancies (${summary.discrepancyCount}):</strong> Blind AI solver key differs from generator key.</p>` : ''}
+                    ${summary.rationaleContradictionCount > 0 ? `<p class="text-xs text-red-200">• <strong>Rationale Position Contradictions (${summary.rationaleContradictionCount}):</strong> Rationale text references option letters that contradict current answer index.</p>` : ''}
+                    ${(report.examWideFindings || []).map(f => `<p class="text-xs text-yellow-200">• <strong>${f.title}:</strong> ${f.explanation}</p>`).join('')}
                 </div>
             ` : ''}
 
-            <!-- Item-by-Item Review Accordion / Cards -->
+            <!-- Item-by-Item Review Cards -->
             <div class="space-y-4">
                 <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Item-by-Item Pedagogical Audit</h4>
                 ${report.itemReports.map((item, idx) => `
@@ -479,7 +602,7 @@ ${JSON.stringify(itemsBatch, null, 2)}
                         <div class="flex flex-wrap justify-between items-start gap-2 mb-3">
                             <div class="flex items-center gap-2">
                                 <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase border ${statusBadgeColor(item.finalStatus)}">
-                                    ${item.finalStatus}
+                                    ${item.normalizedStatus || item.finalStatus}
                                 </span>
                                 <span class="text-xs font-bold text-slate-300">Q${idx + 1}. ${item.competency}</span>
                             </div>
@@ -514,6 +637,28 @@ ${JSON.stringify(itemsBatch, null, 2)}
                                 </span>
                             </div>
                         </div>
+
+                        <!-- Per-Option Distractor Assessment Table -->
+                        ${(item.distractorAssessment && typeof item.distractorAssessment === 'object') ? `
+                            <div class="mb-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-xs">
+                                <span class="text-[10px] text-slate-500 uppercase font-bold block mb-2">Per-Option Quality Evaluation</span>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    ${[0, 1, 2, 3].map(optIdx => {
+                                        const optEval = item.distractorAssessment[String(optIdx)] || item.distractorAssessment[optIdx];
+                                        const isCorrect = optIdx === item.originalAnswerIndex;
+                                        const optText = Array.isArray(item.options) ? item.options[optIdx] : '';
+                                        return `
+                                            <div class="p-2 rounded-lg border text-[11px] ${isCorrect ? 'bg-green-500/10 border-green-500/20 text-green-300' : (optEval?.plausible ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300')}">
+                                                <strong>Option ${String.fromCharCode(65 + optIdx)}:</strong> "${(optText || '').substring(0, 40)}..."
+                                                <div class="text-[10px] opacity-80 mt-0.5">
+                                                    ${isCorrect ? '[Designated Correct Answer]' : (optEval?.plausible ? '✓ Plausible Distractor' : '⚠️ Weak/Absurd Distractor')} — ${optEval?.misconception || 'No evaluation.'}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
 
                         <!-- Issues & Pedagogical Findings -->
                         ${item.issues && item.issues.length > 0 ? `

@@ -9,6 +9,7 @@
     <script src="assets/app-state.js"></script>
     <script src="assets/app-logic.js"></script>
     <script src="assets/app-ui.js"></script>
+    <script src="assets/ai-reviewer.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .glass {
@@ -420,6 +421,9 @@
                         </div>
                     </div>
 
+                    <button onclick="handleReviewAssessmentQuality()" id="review-quality-btn" class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-purple-600/30 flex items-center gap-1.5" title="Run Independent AI Quality Review">
+                        <i class="fas fa-microscope text-purple-200"></i> Review Quality
+                    </button>
                     <button onclick="downloadTOSCSV(lastGeneratedResults)" class="px-3 py-1.5 bg-indigo-600/80 hover:bg-indigo-600 rounded-xl text-xs font-bold transition-all" title="Download TOS CSV">
                         <i class="fas fa-table mr-1"></i> TOS
                     </button>
@@ -1848,6 +1852,75 @@
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalText;
+            }
+        }
+
+        async function handleReviewAssessmentQuality() {
+            if (!lastGeneratedResults || !Array.isArray(lastGeneratedResults) || lastGeneratedResults.length === 0) {
+                alert("Please generate or load an examination first before running Quality Review.");
+                return;
+            }
+
+            if (!state.apiKey) {
+                alert("API Key is required to run Quality Review. Please enter your key in Settings.");
+                return;
+            }
+
+            const btn = document.getElementById('review-quality-btn');
+            const originalText = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Reviewing...';
+            }
+
+            let reportContainer = document.getElementById('quality-review-container');
+            if (!reportContainer) {
+                const resultsContent = document.getElementById('results-content');
+                reportContainer = document.createElement('div');
+                reportContainer.id = 'quality-review-container';
+                resultsContent.insertBefore(reportContainer, resultsContent.firstChild);
+            }
+
+            reportContainer.innerHTML = `
+                <div class="p-6 bg-slate-900/80 border border-purple-500/30 rounded-3xl mb-6 text-center text-xs text-purple-300">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2 text-purple-400 block"></i>
+                    <strong class="text-white text-sm block mb-1">Performing Independent Blind AI Quality Audit...</strong>
+                    Solving questions blindly without seeing answer keys and evaluating distractor plausibility.
+                    <div id="review-progress-text" class="mt-2 text-slate-400 font-mono">Preparing review batch...</div>
+                </div>
+            `;
+
+            try {
+                const report = await AIReviewer.reviewAssessment(lastGeneratedResults, {
+                    apiKey: state.apiKey,
+                    selectedModel: state.selectedModel,
+                    onProgress: (current, end, total) => {
+                        const progElem = document.getElementById('review-progress-text');
+                        if (progElem) {
+                            progElem.innerText = `Auditing items ${current}–${end} of ${total} using ${state.selectedModel}...`;
+                        }
+                    }
+                });
+
+                AIReviewer.renderReviewReportUI(reportContainer, report);
+                reportContainer.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error("Quality Review Error:", error);
+                reportContainer.innerHTML = `
+                    <div class="p-4 bg-red-900/30 border border-red-500 rounded-2xl mb-6 text-xs text-red-200 flex items-start gap-2">
+                        <i class="fas fa-exclamation-triangle text-red-400 text-base mt-0.5"></i>
+                        <div>
+                            <strong class="text-red-400 font-bold block text-sm mb-0.5">Quality Review Failed</strong>
+                            ${error.message}
+                        </div>
+                    </div>
+                `;
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
             }
         }
 

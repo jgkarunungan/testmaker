@@ -27,8 +27,8 @@ const AppState = {
             }
         ],
         apiKey: localStorage.getItem('gemini_api_key') || '',
-        selectedModel: localStorage.getItem('testmaker_model') || 'gemini-3.8-flash',
-        thinkingLevel: localStorage.getItem('testmaker_thinking_level') || 'medium',
+        selectedModel: localStorage.getItem('testmaker_model') || 'gemini-3.5-flash-lite',
+        thinkingLevel: localStorage.getItem('testmaker_thinking_level') || 'high',
         useFallback: localStorage.getItem('testmaker_use_fallback') !== 'false',
         history: JSON.parse(localStorage.getItem('testmaker_history') || '[]'),
         systemPrompt: localStorage.getItem('system_prompt') || ''

@@ -3,26 +3,59 @@
  */
 
 const AI_CONFIG = {
-    PRIMARY_MODEL: { name: 'gemini-3.8-flash', version: 'v1beta', supportsThinking: true },
-    ECONOMY_MODEL: { name: 'gemini-3.1-flash-lite', version: 'v1beta', supportsThinking: true }
+    MODELS: {
+        'gemma-4-31b-it': {
+            name: 'gemma-4-31b-it',
+            displayName: 'Gemma 4 31B IT',
+            version: 'v1beta',
+            supportsThinking: true,
+            thinkingLevels: [
+                { value: 'high', label: 'High Reasoning' },
+                { value: 'minimal', label: 'Minimal Reasoning' }
+            ],
+            defaultThinking: 'high'
+        },
+        'gemini-3.5-flash-lite': {
+            name: 'gemini-3.5-flash-lite',
+            displayName: 'Gemini 3.5 Flash-Lite',
+            version: 'v1beta',
+            supportsThinking: true,
+            thinkingLevels: [
+                { value: 'high', label: 'High Reasoning' },
+                { value: 'medium', label: 'Medium Reasoning' },
+                { value: 'low', label: 'Low Reasoning' },
+                { value: 'minimal', label: 'Minimal Reasoning' }
+            ],
+            defaultThinking: 'high'
+        },
+        'gemini-flash-lite-latest': {
+            name: 'gemini-flash-lite-latest',
+            displayName: 'Gemini Flash-Lite Latest',
+            version: 'v1beta',
+            supportsThinking: true,
+            thinkingLevels: [
+                { value: 'high', label: 'High Reasoning' },
+                { value: 'medium', label: 'Medium Reasoning' },
+                { value: 'low', label: 'Low Reasoning' },
+                { value: 'minimal', label: 'Minimal Reasoning' }
+            ],
+            defaultThinking: 'high'
+        }
+    },
+    DEFAULT_MODEL: 'gemini-3.5-flash-lite'
 };
 
 function getModelConfig(selectedModel) {
-    if (selectedModel === 'gemini-3.1-flash-lite') {
-        return AI_CONFIG.ECONOMY_MODEL;
+    if (selectedModel && AI_CONFIG.MODELS[selectedModel]) {
+        return AI_CONFIG.MODELS[selectedModel];
     }
-    return AI_CONFIG.PRIMARY_MODEL;
+    return AI_CONFIG.MODELS[AI_CONFIG.DEFAULT_MODEL];
 }
 
 function getModelsToTry(selectedModel, useFallback) {
     const mainModel = getModelConfig(selectedModel);
-    if (!useFallback) {
-        return [mainModel];
-    }
-    const fallbackModel = mainModel.name === AI_CONFIG.PRIMARY_MODEL.name
-        ? AI_CONFIG.ECONOMY_MODEL
-        : AI_CONFIG.PRIMARY_MODEL;
-    return [mainModel, fallbackModel];
+    // Silent model family switching is disabled for quality comparison integrity
+    return [mainModel];
 }
 
 /**
@@ -137,14 +170,14 @@ ${JSON.stringify(systemPrompt, null, 2)}
          ],
          "answer_index": 0,
          "cognitive_level": "Remembering",
-         "rationale": "Clear pedagogical explanation of why option index 0 is correct and why distractors represent common misconceptions."
+         "rationale": "Clear pedagogical explanation of why the correct answer CONTENT is defensible and why distractors represent common misconceptions. DO NOT reference option letters (e.g. Option A, Choice B) in rationales, as option letters will be shuffled during answer balancing."
        }
      ]
    }
 `;
 
     const modelsToTry = getModelsToTry(selectedModel, useFallback);
-    return await executeAiRequest(apiKey, prompt, modelsToTry, thinkingLevel || 'medium');
+    return await executeAiRequest(apiKey, prompt, modelsToTry, thinkingLevel || 'high');
 }
 
 /**
@@ -273,53 +306,228 @@ RETURN ONLY THE UPDATED JSON OBJECT. NO MARKDOWN.`;
 }
 
 /**
- * Internal helper to handle the Fetch API and retries
+ * Internal helper to handle the Fetch API, diagnostics, and error reporting
  */
-async function executeAiRequest(apiKey, prompt, models, thinkingLevel = 'medium') {
+async function executeAiRequest(apiKey, prompt, models, thinkingLevel = 'high') {
     let lastError = '';
+    let lastDiagnostics = null;
+
     for (const model of models) {
+        const startTime = Date.now();
         try {
             const requestBody = {
-                contents: [{ parts: [{ text: prompt }] }]
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    maxOutputTokens: 8192
+                }
             };
 
-            if (model.supportsThinking && thinkingLevel) {
-                requestBody.generationConfig = {
-                    thinkingConfig: {
-                        thinkingLevel: thinkingLevel
-                    }
+            const modelConfig = (typeof getModelConfig === 'function') ? getModelConfig(model.name) : model;
+            let sanitizedLevel = 'high';
+            if (modelConfig && modelConfig.supportsThinking) {
+                const validLevels = (modelConfig.thinkingLevels || []).map(l => l.value);
+                const reqLevel = (thinkingLevel || '').toLowerCase();
+                sanitizedLevel = validLevels.includes(reqLevel) ? reqLevel : (modelConfig.defaultThinking || 'high');
+
+                requestBody.generationConfig.thinkingConfig = {
+                    thinkingLevel: sanitizedLevel
                 };
             }
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/${model.version}/models/${model.name}:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/${model.version || 'v1beta'}/models/${model.name}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
             });
 
+            const durationMs = Date.now() - startTime;
             const data = Array.isArray(response) ? response : await response.json();
-            if (response.ok || data.candidates) {
-                if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                    lastError = "AI safety filter triggered or empty response.";
-                    continue;
-                }
-                const parts = data.candidates[0].content.parts || [];
-                // Exclude parts marked as thinking thoughts (p.thought = true)
-                const responseParts = parts.filter(p => !p.thought);
-                let text = (responseParts.length > 0 ? responseParts : parts)
-                    .map(p => p.text || '')
-                    .filter(t => t.trim().length > 0)
-                    .join('\n');
 
-                // Clean markdown wrappers if present
-                text = text.replace(/^```[a-z]*\n?|```$/gm, '').trim();
-                return { text, success: true };
-            } else {
-                lastError = data.error ? data.error.message : 'Unknown Error';
+            // Handle HTTP error status codes with explicit error messaging
+            if (!response.ok) {
+                const apiMsg = data.error?.message || response.statusText || 'Unknown API Error';
+                if (response.status === 400) {
+                    lastError = `HTTP 400 Invalid Request: ${apiMsg}`;
+                } else if (response.status === 429) {
+                    lastError = `HTTP 429 Quota Exhausted: ${apiMsg}. Rate limit reached.`;
+                } else if (response.status === 503) {
+                    lastError = `HTTP 503 Service Overloaded: ${apiMsg}. Server is busy.`;
+                } else if (response.status === 504) {
+                    lastError = `HTTP 504 Gateway Timeout: ${apiMsg}.`;
+                } else {
+                    lastError = `HTTP ${response.status} Error: ${apiMsg}`;
+                }
+                lastDiagnostics = {
+                    requestedModel: model.name,
+                    thinkingLevel: sanitizedLevel,
+                    durationMs,
+                    httpStatus: response.status,
+                    error: apiMsg
+                };
+                continue;
             }
+
+            // Inspect candidates in successful HTTP response
+            const candidate = data.candidates && data.candidates[0];
+            const finishReason = candidate ? candidate.finishReason : 'NO_CANDIDATE';
+
+            if (!candidate || !candidate.content) {
+                if (finishReason === 'SAFETY') {
+                    lastError = "AI response was blocked by safety filters (SAFETY).";
+                } else if (finishReason === 'RECITATION') {
+                    lastError = "AI response was blocked by recitation check (RECITATION).";
+                } else {
+                    lastError = `AI response contained no output candidates (finishReason: ${finishReason}).`;
+                }
+                lastDiagnostics = {
+                    requestedModel: model.name,
+                    thinkingLevel: sanitizedLevel,
+                    durationMs,
+                    httpStatus: response.status,
+                    finishReason,
+                    candidatesCount: data.candidates ? data.candidates.length : 0
+                };
+                continue;
+            }
+
+            const parts = candidate.content.parts || [];
+            const thinkingParts = parts.filter(p => p.thought);
+            const responseParts = parts.filter(p => !p.thought);
+
+            if (responseParts.length === 0) {
+                if (finishReason === 'MAX_TOKENS') {
+                    lastError = `Generation truncated (MAX_TOKENS). The model exhausted tokens on internal reasoning (${thinkingParts.length} thinking parts) without producing final output.`;
+                } else {
+                    lastError = `AI model returned thinking thoughts (${thinkingParts.length} parts) but no final response text (finishReason: ${finishReason}).`;
+                }
+                lastDiagnostics = {
+                    requestedModel: model.name,
+                    thinkingLevel: sanitizedLevel,
+                    durationMs,
+                    httpStatus: response.status,
+                    finishReason,
+                    thinkingPartsCount: thinkingParts.length,
+                    nonThinkingPartsCount: 0
+                };
+                continue;
+            }
+
+            let text = responseParts
+                .map(p => p.text || '')
+                .filter(t => t.trim().length > 0)
+                .join('\n');
+
+            if (!text.trim()) {
+                lastError = `AI model returned empty text output (finishReason: ${finishReason}).`;
+                lastDiagnostics = {
+                    requestedModel: model.name,
+                    thinkingLevel: sanitizedLevel,
+                    durationMs,
+                    httpStatus: response.status,
+                    finishReason,
+                    thinkingPartsCount: thinkingParts.length,
+                    nonThinkingPartsCount: responseParts.length,
+                    finalTextLength: 0
+                };
+                continue;
+            }
+
+            // Clean markdown wrappers if present
+            text = text.replace(/^```[a-z]*\n?|```$/gm, '').trim();
+
+            const diagnostics = {
+                requestedModel: model.name,
+                thinkingLevel: sanitizedLevel,
+                durationMs,
+                httpStatus: response.status,
+                finishReason,
+                candidatesCount: data.candidates ? data.candidates.length : 0,
+                thinkingPartsCount: thinkingParts.length,
+                nonThinkingPartsCount: responseParts.length,
+                finalTextLength: text.length,
+                usageMetadata: data.usageMetadata || null
+            };
+
+            return { text, success: true, modelUsed: model.name, diagnostics };
+
         } catch (error) {
-            lastError = error.message;
+            lastError = `Client/Network Error: ${error.message}`;
+            lastDiagnostics = {
+                requestedModel: model.name,
+                error: error.message
+            };
         }
     }
-    throw new Error(lastError);
+    const errObj = new Error(lastError);
+    errObj.diagnostics = lastDiagnostics;
+    throw errObj;
+}
+
+/**
+ * Diagnostic Suite for Teacher Manual Testing (Tests A to E)
+ */
+async function runDiagnosticTest(testType, options = {}) {
+    const { apiKey, selectedModel = 'gemma-4-31b-it' } = options;
+    if (!apiKey) throw new Error("API Key is required for diagnostic test.");
+
+    const modelObj = getModelConfig(selectedModel);
+
+    if (testType === 'A') {
+        // Test A: Basic Connection (Short factual prompt, Minimal reasoning)
+        const prompt = "Explain the concept of intersubjectivity in philosophy in one concise sentence.";
+        return await executeAiRequest(apiKey, prompt, [modelObj], 'minimal');
+    }
+
+    if (testType === 'B') {
+        // Test B: Single MCQ (Philosophy, Minimal reasoning)
+        const inputs = {
+            apiKey,
+            subject: "Introduction to Philosophy of the Human Person",
+            competency: "Distinguish opinion from truth",
+            notes: "Analyze statements and identify if they are facts or opinions.",
+            itemCount: 1,
+            totalExamItems: 1,
+            category: 'A',
+            systemPrompt: { role: "Pedagogical MCQ Designer" },
+            selectedModel,
+            thinkingLevel: 'minimal'
+        };
+        return await callGenerateMCQ(inputs);
+    }
+
+    if (testType === 'C') {
+        // Test C: Single MCQ (Philosophy, High reasoning)
+        const inputs = {
+            apiKey,
+            subject: "Introduction to Philosophy of the Human Person",
+            competency: "Distinguish opinion from truth",
+            notes: "Analyze statements and identify if they are facts or opinions.",
+            itemCount: 1,
+            totalExamItems: 1,
+            category: 'A',
+            systemPrompt: { role: "Pedagogical MCQ Designer" },
+            selectedModel,
+            thinkingLevel: 'high'
+        };
+        return await callGenerateMCQ(inputs);
+    }
+
+    if (testType === 'D') {
+        // Test D: Two MCQs (Philosophy, High reasoning)
+        const inputs = {
+            apiKey,
+            subject: "Introduction to Philosophy of the Human Person",
+            competency: "Distinguish opinion from truth",
+            notes: "Analyze statements and identify if they are facts or opinions.",
+            itemCount: 2,
+            totalExamItems: 2,
+            category: 'A',
+            systemPrompt: { role: "Pedagogical MCQ Designer" },
+            selectedModel,
+            thinkingLevel: 'high'
+        };
+        return await callGenerateMCQ(inputs);
+    }
+
+    throw new Error(`Unknown diagnostic test type: ${testType}`);
 }

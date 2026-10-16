@@ -1,0 +1,8 @@
+# IDE files
+.idea/caches/
+.idea/workspace.xml
+.idea/shelf/
+
+# System files
+.DS_Store
+Thumbs.db

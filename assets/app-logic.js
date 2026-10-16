@@ -218,17 +218,30 @@ const AppLogic = {
         const category = data[0]?.category || 'A';
         const storageKey = `vcount_${subjectName}_${category}`;
         let version = parseInt(localStorage.getItem(storageKey) || "1");
-        const filename = `assessment-${subjectName.replace(/\s+/g, '-')}-Cat${category}-v${version}.json`;
+
+        const modelId = data[0]?.generatingModel || data[0]?.requestedModel || 'Model';
+        let modelShort = 'Model';
+        if (modelId.includes('gemma-4')) modelShort = 'Gemma4';
+        else if (modelId.includes('gemini-3.5') || modelId.includes('3.5-flash-lite')) modelShort = 'Gemini35Lite';
+        else if (modelId.includes('flash-lite-latest')) modelShort = 'GeminiFlashLiteLatest';
+        else modelShort = modelId.replace(/[^a-zA-Z0-9]/g, '');
+
+        const itemCount = data.reduce((sum, res) => sum + AppLogic.getQuestions(res).length, 0);
+        const filename = `TestMaker_${modelShort}_${itemCount}_Items.json`;
         localStorage.setItem(storageKey, (version + 1).toString());
 
         const bundle = {
             exportType: "full_assessment",
             subject: subjectName,
             category: category,
-            generatedAt: new Date().toISOString(),
+            generatedAt: data[0]?.generatedAt || new Date().toISOString(),
+            requestedModel: data[0]?.requestedModel || null,
+            generatingModel: data[0]?.generatingModel || null,
+            thinkingLevel: data[0]?.thinkingLevel || null,
+            itemCount: itemCount,
             data: data
         };
-        
+
         const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

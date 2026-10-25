@@ -1,55 +1,57 @@
 /**
- * AI REVIEWER MODULE (Phase 8.1.3 - Cognitive Calibration, MCQ Integrity & Quality Reviewer)
+ * AI REVIEWER MODULE (Phase 8.1.4A - Reliable Gemma Micro-Batch Reviewer & Quota Recovery)
  * STRICTLY REVIEW-ONLY. DOES NOT MUTATE OR AUTOMATICALLY REWRITE EXAMINATIONS.
  */
 
-const AIReviewer = {
-    // Active review report for current examination snapshot
-    currentReport: null,
-    isReviewing: false,
+function generateContentFingerprint(results) {
+    if (!results || !Array.isArray(results) || results.length === 0) return 'empty_exam';
+    let rawStr = '';
+    results.forEach(res => {
+        const qs = (typeof AppLogic !== 'undefined' && typeof AppLogic.getQuestions === 'function')
+            ? AppLogic.getQuestions(res)
+            : (Array.isArray(res.questions) ? res.questions : (res.questions?.questions || []));
+        qs.forEach(q => {
+            rawStr += (q.question || '') + (q.options ? q.options.join('|') : '') + q.answer_index + (q.cognitive_level || '');
+        });
+    });
+    let hash = 0;
+    for (let i = 0; i < rawStr.length; i++) {
+        hash = ((hash << 5) - hash) + rawStr.charCodeAt(i);
+        hash |= 0;
+    }
+    return `fp_${Math.abs(hash)}`;
+}
 
-    /**
-     * Executes independent AI Quality Review on a generated examination snapshot.
-     * Operates on a deep clone to ensure complete immutability of the source examination.
-     */
-    async reviewAssessment(resultsSnapshot, options = {}) {
-        if (!resultsSnapshot || !Array.isArray(resultsSnapshot) || resultsSnapshot.length === 0) {
-            throw new Error("No generated examination results available to review.");
-        }
+const AppReviewSession = {
+    activeSession: null,
 
-        const apiKey = options.apiKey || (typeof state !== 'undefined' ? state.apiKey : '');
-        if (!apiKey) {
-            throw new Error("API Key is required to run AI Quality Review. Please enter your key in Settings.");
-        }
-
-        const selectedModel = options.selectedModel || (typeof state !== 'undefined' ? state.selectedModel : 'gemini-3.5-flash-lite');
+    createSession(resultsSnapshot, options = {}) {
+        const fingerprint = generateContentFingerprint(resultsSnapshot);
         const subjectName = resultsSnapshot[0]?.subjectName || 'General Assessment';
         const category = resultsSnapshot[0]?.category || 'A';
+        const selectedModel = options.selectedModel || (typeof state !== 'undefined' ? state.selectedModel : 'gemma-4-31b-it');
+        const thinkingLevel = options.thinkingLevel || (typeof state !== 'undefined' ? state.thinkingLevel : 'high');
 
-        // Deep clone snapshot to strictly protect original examination data from mutation
-        const clonedSnapshot = JSON.parse(JSON.stringify(resultsSnapshot));
-
-        // Flatten items with stable item identifiers
+        // Flatten items with stable identifiers
         const reviewBatchItems = [];
-        const originalItemMap = new Map();
+        const originalItemMap = {};
 
-        clonedSnapshot.forEach((res, resIdx) => {
+        resultsSnapshot.forEach((res, resIdx) => {
             const qs = (typeof AppLogic !== 'undefined' && typeof AppLogic.getQuestions === 'function')
                 ? AppLogic.getQuestions(res)
                 : (Array.isArray(res.questions) ? res.questions : (res.questions?.questions || []));
 
             qs.forEach((q, qIdx) => {
                 const itemId = `c${resIdx}-q${qIdx}`;
-                originalItemMap.set(itemId, {
+                originalItemMap[itemId] = {
                     resIdx,
                     qIdx,
                     competency: res.competency || 'General Competency',
                     notes: res.notes || '',
                     hours: res.hours || 1,
-                    question: q
-                });
+                    question: JSON.parse(JSON.stringify(q))
+                };
 
-                // BLIND QUESTION ITEM: Exclude answer_index, correct letter, and rationale!
                 reviewBatchItems.push({
                     item_id: itemId,
                     competency: res.competency || 'General Competency',
@@ -61,28 +63,165 @@ const AIReviewer = {
             });
         });
 
-        if (reviewBatchItems.length === 0) {
-            throw new Error("Examination contains no question items to review.");
+        const session = {
+            reviewSessionId: `revsess_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+            status: 'IN_PROGRESS', // IN_PROGRESS | PAUSED | COMPLETED | FAILED
+            subjectName,
+            category,
+            reviewerModel: selectedModel,
+            thinkingLevel,
+            contentFingerprint: fingerprint,
+            totalItems: reviewBatchItems.length,
+            batchSize: 1, // Single-item micro-batch default for maximum stability and lower prompt complexity
+            reviewBatchItems,
+            originalItemMap,
+            itemReviewMap: {}, // Map of itemId -> AI review object
+            completedItemIds: [],
+            retryCount: 0,
+            lastError: null,
+            lastDiagnostics: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        this.activeSession = session;
+        this.saveSession();
+        return session;
+    },
+
+    saveSession() {
+        if (!this.activeSession) return;
+        this.activeSession.updatedAt = new Date().toISOString();
+        try {
+            localStorage.setItem('testmaker_active_review_session', JSON.stringify(this.activeSession));
+        } catch (e) {
+            console.error('Failed to persist review session to localStorage:', e);
+        }
+    },
+
+    loadSavedSession() {
+        try {
+            const saved = localStorage.getItem('testmaker_active_review_session');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed && parsed.reviewSessionId && parsed.reviewBatchItems) {
+                    this.activeSession = parsed;
+                    return parsed;
+                }
+            }
+        } catch (e) {}
+        return null;
+    },
+
+    clearSession() {
+        this.activeSession = null;
+        localStorage.removeItem('testmaker_active_review_session');
+        localStorage.removeItem('review_session_lock');
+    },
+
+    pauseSession() {
+        if (this.activeSession) {
+            this.activeSession.status = 'PAUSED';
+            this.saveSession();
+        }
+    },
+
+    resumeSession() {
+        if (this.activeSession) {
+            this.activeSession.status = 'IN_PROGRESS';
+            this.saveSession();
+        }
+    }
+};
+
+const AIReviewer = {
+    currentReport: null,
+    isReviewing: false,
+
+    /**
+     * Executes or resumes independent AI Quality Review using competency micro-batches & quota scheduler.
+     */
+    async reviewAssessment(resultsSnapshot, options = {}) {
+        if (!resultsSnapshot || !Array.isArray(resultsSnapshot) || resultsSnapshot.length === 0) {
+            throw new Error("No generated examination results available to review.");
+        }
+
+        const apiKey = options.apiKey || (typeof state !== 'undefined' ? state.apiKey : '');
+        if (!apiKey) {
+            throw new Error("API Key is required to run AI Quality Review. Please enter your key in Settings.");
+        }
+
+        const currentFingerprint = generateContentFingerprint(resultsSnapshot);
+        let session = AppReviewSession.loadSavedSession();
+
+        // Check if saved session matches active examination fingerprint
+        if (!session || session.contentFingerprint !== currentFingerprint || session.status === 'COMPLETED') {
+            session = AppReviewSession.createSession(resultsSnapshot, options);
+        } else {
+            session.status = 'IN_PROGRESS';
+            AppReviewSession.saveSession();
         }
 
         this.isReviewing = true;
-        const totalItems = reviewBatchItems.length;
+        return await this.runReviewSessionLoop(apiKey, resultsSnapshot, options);
+    },
 
-        // Process in manageable batches of 3-4 items
-        const BATCH_SIZE = 4;
-        const itemReviewMap = new Map();
+    /**
+     * Sequential execution loop for review micro-batches.
+     */
+    async runReviewSessionLoop(apiKey, resultsSnapshot, options = {}) {
+        const session = AppReviewSession.activeSession;
+        if (!session) throw new Error("No active review session found.");
 
-        for (let i = 0; i < totalItems; i += BATCH_SIZE) {
-            const batch = reviewBatchItems.slice(i, i + BATCH_SIZE);
-            const prompt = this.buildBlindReviewBatchPrompt(batch, subjectName, category);
+        const allQuestionsList = [];
+        resultsSnapshot.forEach(res => {
+            const qs = (typeof AppLogic !== 'undefined' && typeof AppLogic.getQuestions === 'function')
+                ? AppLogic.getQuestions(res)
+                : (Array.isArray(res.questions) ? res.questions : (res.questions?.questions || []));
+            qs.forEach(q => allQuestionsList.push(q));
+        });
+
+        while (session.status === 'IN_PROGRESS') {
+            const pendingItems = session.reviewBatchItems.filter(item => !session.completedItemIds.includes(item.item_id));
+
+            if (pendingItems.length === 0) {
+                session.status = 'COMPLETED';
+                AppReviewSession.saveSession();
+                break;
+            }
+
+            // Group pending items by competency (Never mix competencies in a review micro-batch)
+            const firstComp = pendingItems[0].competency;
+            const compPendingItems = pendingItems.filter(item => item.competency === firstComp);
+
+            // Take micro-batch of size session.batchSize (default 1 item for single-item diagnostic stability)
+            const targetBatch = compPendingItems.slice(0, session.batchSize || 1);
+            const prompt = this.buildBlindReviewBatchPrompt(targetBatch, session.subjectName, session.category);
 
             if (typeof options.onProgress === 'function') {
-                options.onProgress(i + 1, Math.min(i + BATCH_SIZE, totalItems), totalItems);
+                options.onProgress(session.completedItemIds.length + 1, Math.min(session.completedItemIds.length + targetBatch.length, session.totalItems), session.totalItems);
             }
 
             try {
-                const modelObj = (typeof getModelConfig === 'function') ? getModelConfig(selectedModel) : { name: selectedModel };
-                const aiResult = await executeAiRequest(apiKey, prompt, [modelObj], 'high');
+                // Rate-limit scheduling check BEFORE sending request
+                let schedulerReqRecord = null;
+                if (typeof AIScheduler !== 'undefined' && typeof AIScheduler.scheduleRequest === 'function') {
+                    schedulerReqRecord = await AIScheduler.scheduleRequest(prompt, {
+                        model: session.reviewerModel,
+                        onThrottled: (waitMs) => {
+                            if (typeof options.onThrottled === 'function') options.onThrottled(waitMs);
+                        }
+                    });
+                }
+
+                const modelObj = (typeof getModelConfig === 'function') ? getModelConfig(session.reviewerModel) : { name: session.reviewerModel };
+                const aiResult = await executeAiRequest(apiKey, prompt, [modelObj], session.thinkingLevel || 'high');
+
+                if (schedulerReqRecord && aiResult && aiResult.diagnostics && aiResult.diagnostics.usageMetadata) {
+                    if (typeof AIScheduler !== 'undefined' && typeof AIScheduler.reconcileUsage === 'function') {
+                        AIScheduler.reconcileUsage(schedulerReqRecord, aiResult.diagnostics.usageMetadata);
+                    }
+                }
 
                 if (aiResult && aiResult.success && aiResult.text) {
                     const parsedObj = this.extractAndParseReviewJSON(aiResult.text);
@@ -90,16 +229,55 @@ const AIReviewer = {
 
                     reviewsArray.forEach(rev => {
                         if (rev && rev.item_id) {
-                            itemReviewMap.set(rev.item_id, rev);
+                            session.itemReviewMap[rev.item_id] = rev;
+                            if (!session.completedItemIds.includes(rev.item_id)) {
+                                session.completedItemIds.push(rev.item_id);
+                            }
                         }
                     });
+
+                    session.retryCount = 0;
+                    session.lastError = null;
+                    session.lastDiagnostics = aiResult.diagnostics || null;
+                    AppReviewSession.saveSession();
+                } else {
+                    throw new Error(aiResult ? aiResult.text : "AI returned empty review response.");
                 }
+
             } catch (err) {
-                console.warn(`Review batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`, err.message);
+                console.warn("Review Micro-Batch Error:", err.message);
+                session.retryCount = (session.retryCount || 0) + 1;
+                session.lastError = err.message;
+                session.lastDiagnostics = err.diagnostics || {
+                    requestedModel: session.reviewerModel,
+                    thinkingLevel: session.thinkingLevel,
+                    itemId: targetBatch[0]?.item_id,
+                    inputCharLength: prompt.length,
+                    error: err.message
+                };
+
+                // On MAX_TOKENS or truncation error, ensure batch size is 1
+                if (err.message.includes("MAX_TOKENS") || err.message.includes("truncated") || err.message.includes("omitted")) {
+                    session.batchSize = 1;
+                }
+
+                if (session.retryCount >= 3) {
+                    session.status = 'PAUSED';
+                    AppReviewSession.saveSession();
+                    const errObj = new Error(`Review paused safely after 3 retries: ${err.message}`);
+                    errObj.diagnostics = session.lastDiagnostics;
+                    throw errObj;
+                } else {
+                    AppReviewSession.saveSession();
+                    // Bounded exponential backoff delay before retrying
+                    const baseDelay = (typeof process !== 'undefined' && process.versions && process.versions.node) ? 20 : 2000;
+                    const delayMs = Math.min(20000, Math.pow(2, session.retryCount) * baseDelay + Math.random() * 50);
+                    await new Promise(r => setTimeout(r, delayMs));
+                }
             }
         }
 
-        // Combine AI review findings with local deterministic checks & discrepancy analysis
+        // Build Final Combined Report once all batches finish or loop terminates
         const itemReports = [];
         let keepCount = 0;
         let improveCount = 0;
@@ -115,16 +293,16 @@ const AIReviewer = {
         let conceptOverlapCount = 0;
         let rationaleContradictionCount = 0;
 
-        const allQuestionsList = Array.from(originalItemMap.values()).map(o => o.question);
-
-        originalItemMap.forEach((origObj, itemId) => {
-            const origQuestion = origObj.question;
-            const aiReview = itemReviewMap.get(itemId) || null;
+        session.reviewBatchItems.forEach(item => {
+            const itemId = item.item_id;
+            const origMeta = session.originalItemMap[itemId];
+            const origQuestion = origMeta ? origMeta.question : { question: item.question_text, options: item.options, answer_index: 0, cognitive_level: item.declared_cognitive_level };
+            const aiReview = session.itemReviewMap[itemId] || null;
 
             if (!aiReview) {
                 itemReports.push({
                     itemId,
-                    competency: origObj.competency,
+                    competency: item.competency,
                     questionStem: origQuestion.question,
                     options: origQuestion.options,
                     originalAnswerIndex: origQuestion.answer_index,
@@ -144,8 +322,8 @@ const AIReviewer = {
                     stimulusQuality: 'UNCHECKED',
                     stemClarity: 'UNCHECKED',
                     distractorAssessment: null,
-                    issues: [{ criterion: "Review Interrupted", severity: "WARNING", explanation: "Item review was not completed due to network or timeout error.", suggested_correction: "Re-run review for complete assessment coverage." }],
-                    reviewerExplanation: "Unreviewed item due to batch processing interruption."
+                    issues: [{ criterion: "Review Interrupted", severity: "WARNING", explanation: "Item review was not completed due to network or rate limit interruption.", suggested_correction: "Click 'Resume Review' to finish unreviewed items." }],
+                    reviewerExplanation: "Unreviewed item due to session interruption."
                 });
                 unreviewedCount++;
                 return;
@@ -170,7 +348,7 @@ const AIReviewer = {
 
             itemReports.push({
                 itemId,
-                competency: origObj.competency,
+                competency: item.competency,
                 questionStem: origQuestion.question,
                 options: origQuestion.options,
                 originalAnswerIndex: origQuestion.answer_index,
@@ -180,17 +358,18 @@ const AIReviewer = {
             });
         });
 
-        // Perform Examination-Wide Checks across all items
-        const examWideFindings = this.performExaminationWideChecks(itemReports, category);
+        const examWideFindings = this.performExaminationWideChecks(itemReports, session.category);
 
         this.isReviewing = false;
         this.currentReport = {
+            reviewSessionId: session.reviewSessionId,
             reviewedAt: new Date().toISOString(),
-            subjectName,
-            category,
-            reviewerModel: selectedModel,
+            subjectName: session.subjectName,
+            category: session.category,
+            reviewerModel: session.reviewerModel,
+            contentFingerprint: session.contentFingerprint,
             summary: {
-                totalItems,
+                totalItems: session.totalItems,
                 keepCount,
                 improveCount,
                 replaceCount,
@@ -212,7 +391,7 @@ const AIReviewer = {
     },
 
     /**
-     * Builds the Calibrated Blind Review Batch Prompt (Phase 8.1.3).
+     * Builds the Calibrated Blind Review Batch Prompt (Phase 8.1.3/8.1.4A).
      * EXCLUDES answer_index, correct letter, and rationale.
      */
     buildBlindReviewBatchPrompt(itemsBatch, subjectName, category) {
@@ -318,7 +497,7 @@ ${JSON.stringify(itemsBatch, null, 2)}
             normalizedStatus = 'TEACHER_REVIEW';
         }
 
-        // Map normalized status to primary UI status (KEEP, IMPROVE, REPLACE, TEACHER_REVIEW, INCOMPLETE_REVIEW)
+        // Map normalized status to primary UI status
         let finalStatus = 'TEACHER_REVIEW';
         if (normalizedStatus === 'KEEP') finalStatus = 'KEEP';
         else if (normalizedStatus.startsWith('IMPROVE')) finalStatus = 'IMPROVE';
@@ -399,7 +578,6 @@ ${JSON.stringify(itemsBatch, null, 2)}
         let rationaleContradiction = false;
         const rationaleText = origQuestion.rationale || '';
         if (rationaleText.trim().length > 0) {
-            // Match phrases like "Option A is correct", "Choice C is the answer", "Letter B"
             const matchLetter = rationaleText.match(/\b(?:option|choice|letter)\s+([a-d])\b/i);
             if (matchLetter && matchLetter[1]) {
                 const referencedLetterIdx = matchLetter[1].toUpperCase().charCodeAt(0) - 65;
@@ -439,7 +617,6 @@ ${JSON.stringify(itemsBatch, null, 2)}
         }
 
         // 8. HARD FAILURE RULE ENFORCEMENT
-        // An item MUST NOT receive KEEP if it has critical defects, answer key discrepancies, or rationale contradictions!
         const hasCriticalIssue = issues.some(i => i.severity === 'CRITICAL') || answerKeyDiscrepancy || defensibleIndices.length !== 1 || answerLeakage || rationaleContradiction || !hasFourOptions;
 
         if (finalStatus === 'KEEP' && hasCriticalIssue) {
@@ -523,7 +700,7 @@ ${JSON.stringify(itemsBatch, null, 2)}
     /**
      * Renders the Quality Review Summary Panel and Item Cards in UI.
      */
-    renderReviewReportUI(container, report) {
+    renderReviewReportUI(container, report, isStale = false) {
         if (!container || !report) return;
 
         const summary = report.summary;
@@ -542,10 +719,17 @@ ${JSON.stringify(itemsBatch, null, 2)}
         };
 
         panel.innerHTML = `
+            ${isStale ? `
+                <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl mb-4 text-xs text-amber-300 flex items-center justify-between">
+                    <span><i class="fas fa-exclamation-circle mr-1.5 text-amber-400"></i> Notice: Examination content was edited after this review was generated.</span>
+                    <button onclick="handleReviewAssessmentQuality()" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold shadow">Re-run Quality Audit</button>
+                </div>
+            ` : ''}
+
             <div class="flex flex-wrap justify-between items-center gap-4 mb-6 border-b border-slate-800 pb-4">
                 <div>
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                        <i class="fas fa-microscope text-purple-400"></i> AI Quality Review Summary Report (Phase 8.1.3)
+                        <i class="fas fa-microscope text-purple-400"></i> AI Quality Review Summary Report
                     </h3>
                     <p class="text-xs text-slate-400 mt-1">
                         Independent pedagogical audit performed via <strong class="text-blue-400">${report.reviewerModel}</strong>
@@ -583,11 +767,12 @@ ${JSON.stringify(itemsBatch, null, 2)}
             </div>
 
             <!-- Examination-Wide Findings & Discrepancy Alerts -->
-            ${(summary.discrepancyCount > 0 || summary.rationaleContradictionCount > 0 || (report.examWideFindings && report.examWideFindings.length > 0)) ? `
+            ${(summary.discrepancyCount > 0 || summary.rationaleContradictionCount > 0 || summary.unreviewedCount > 0 || (report.examWideFindings && report.examWideFindings.length > 0)) ? `
                 <div class="p-4 bg-red-900/30 border border-red-500/50 rounded-2xl mb-6 space-y-2">
                     <div class="font-bold text-red-400 text-xs flex items-center gap-1.5">
                         <i class="fas fa-exclamation-triangle"></i> Examination-Wide Findings & Critical Alerts
                     </div>
+                    ${summary.unreviewedCount > 0 ? `<p class="text-xs text-amber-200">• <strong>Unreviewed Questions (${summary.unreviewedCount}):</strong> Some items were interrupted. Click 'Resume Review' to complete audit.</p>` : ''}
                     ${summary.discrepancyCount > 0 ? `<p class="text-xs text-red-200">• <strong>Answer Key Discrepancies (${summary.discrepancyCount}):</strong> Blind AI solver key differs from generator key.</p>` : ''}
                     ${summary.rationaleContradictionCount > 0 ? `<p class="text-xs text-red-200">• <strong>Rationale Position Contradictions (${summary.rationaleContradictionCount}):</strong> Rationale text references option letters that contradict current answer index.</p>` : ''}
                     ${(report.examWideFindings || []).map(f => `<p class="text-xs text-yellow-200">• <strong>${f.title}:</strong> ${f.explanation}</p>`).join('')}

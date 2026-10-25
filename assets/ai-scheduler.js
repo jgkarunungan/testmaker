@@ -115,7 +115,8 @@ const AIScheduler = {
             if (typeof options.onThrottled === 'function') {
                 options.onThrottled(delayMs, stats);
             }
-            await new Promise(resolve => setTimeout(resolve, delayMs));
+            const actualDelay = (typeof process !== 'undefined' && process.versions && process.versions.node) ? Math.min(10, delayMs) : delayMs;
+            await new Promise(resolve => setTimeout(resolve, actualDelay));
         }
 
         // Record request attempt

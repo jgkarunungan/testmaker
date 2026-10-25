@@ -1892,6 +1892,10 @@
             const modal = document.getElementById('results-modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+
+            if (typeof checkAndRenderResumeReviewBanner === 'function') {
+                checkAndRenderResumeReviewBanner();
+            }
         }
 
         async function refineIndividualItem(btn, resIdx, qIdx) {
@@ -1974,8 +1978,8 @@
                 <div class="p-6 bg-slate-900/80 border border-purple-500/30 rounded-3xl mb-6 text-center text-xs text-purple-300">
                     <i class="fas fa-spinner fa-spin text-2xl mb-2 text-purple-400 block"></i>
                     <strong class="text-white text-sm block mb-1">Performing Independent Blind AI Quality Audit...</strong>
-                    Solving questions blindly without seeing answer keys and evaluating distractor plausibility.
-                    <div id="review-progress-text" class="mt-2 text-slate-400 font-mono">Preparing review batch...</div>
+                    Solving questions blindly without seeing answer keys, evaluating distractors & quota limits.
+                    <div id="review-progress-text" class="mt-2 text-slate-400 font-mono">Dispatching review micro-batches...</div>
                 </div>
             `;
 
@@ -1983,32 +1987,79 @@
                 const report = await AIReviewer.reviewAssessment(lastGeneratedResults, {
                     apiKey: state.apiKey,
                     selectedModel: state.selectedModel,
+                    thinkingLevel: state.thinkingLevel,
                     onProgress: (current, end, total) => {
                         const progElem = document.getElementById('review-progress-text');
                         if (progElem) {
                             progElem.innerText = `Auditing items ${current}–${end} of ${total} using ${state.selectedModel}...`;
                         }
+                    },
+                    onThrottled: (waitMs) => {
+                        const progElem = document.getElementById('review-progress-text');
+                        if (progElem) {
+                            progElem.innerText = `Quota Throttled: Waiting ${Math.ceil(waitMs/1000)}s for 60s rolling window budget...`;
+                        }
                     }
                 });
 
-                AIReviewer.renderReviewReportUI(reportContainer, report);
+                const isStale = (report.contentFingerprint !== generateContentFingerprint(lastGeneratedResults));
+                AIReviewer.renderReviewReportUI(reportContainer, report, isStale);
                 reportContainer.scrollIntoView({ behavior: 'smooth' });
 
             } catch (error) {
                 console.error("Quality Review Error:", error);
-                reportContainer.innerHTML = `
-                    <div class="p-4 bg-red-900/30 border border-red-500 rounded-2xl mb-6 text-xs text-red-200 flex items-start gap-2">
-                        <i class="fas fa-exclamation-triangle text-red-400 text-base mt-0.5"></i>
-                        <div>
-                            <strong class="text-red-400 font-bold block text-sm mb-0.5">Quality Review Failed</strong>
-                            ${error.message}
+                if (AIReviewer.currentReport) {
+                    AIReviewer.renderReviewReportUI(reportContainer, AIReviewer.currentReport, false);
+                } else {
+                    reportContainer.innerHTML = `
+                        <div class="p-4 bg-red-900/30 border border-red-500 rounded-2xl mb-6 text-xs text-red-200 flex items-start gap-2">
+                            <i class="fas fa-exclamation-triangle text-red-400 text-base mt-0.5"></i>
+                            <div>
+                                <strong class="text-red-400 font-bold block text-sm mb-0.5">Quality Review Interrupted</strong>
+                                ${error.message}
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             } finally {
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
+                }
+            }
+        }
+
+        function checkAndRenderResumeReviewBanner() {
+            if (typeof AppReviewSession === 'undefined' || typeof generateContentFingerprint === 'undefined') return;
+            const savedSession = AppReviewSession.loadSavedSession();
+            if (savedSession && (savedSession.status === 'IN_PROGRESS' || savedSession.status === 'PAUSED')) {
+                const currentFingerprint = lastGeneratedResults ? generateContentFingerprint(lastGeneratedResults) : null;
+                if (currentFingerprint && savedSession.contentFingerprint === currentFingerprint) {
+                    const total = savedSession.totalItems;
+                    const completedCount = savedSession.completedItemIds.length;
+
+                    let banner = document.getElementById('resume-review-banner');
+                    if (!banner) {
+                        banner = document.createElement('div');
+                        banner.id = 'resume-review-banner';
+                        banner.className = 'fixed top-0 left-0 right-0 bg-purple-900/90 border-b border-purple-500/40 p-3 px-6 text-xs text-white flex justify-between items-center z-[100] shadow-xl backdrop-blur-md';
+                        document.body.insertBefore(banner, document.body.firstChild);
+                    }
+
+                    banner.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-microscope text-purple-400 text-sm"></i>
+                            <span>In-Progress Quality Review Session Found: <strong>${savedSession.subjectName}</strong> — <strong class="text-purple-300">${completedCount} / ${total} items audited</strong>.</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="handleReviewAssessmentQuality()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 font-bold rounded-lg text-xs shadow">
+                                Resume Quality Audit
+                            </button>
+                            <button onclick="AppReviewSession.clearSession(); this.parentElement.parentElement.remove();" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs">
+                                Discard
+                            </button>
+                        </div>
+                    `;
                 }
             }
         }

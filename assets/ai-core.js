@@ -4,17 +4,6 @@
 
 const AI_CONFIG = {
     MODELS: {
-        'gemma-4-31b-it': {
-            name: 'gemma-4-31b-it',
-            displayName: 'Gemma 4 31B IT',
-            version: 'v1beta',
-            supportsThinking: true,
-            thinkingLevels: [
-                { value: 'high', label: 'High Reasoning' },
-                { value: 'minimal', label: 'Minimal Reasoning' }
-            ],
-            defaultThinking: 'high'
-        },
         'gemini-3.5-flash-lite': {
             name: 'gemini-3.5-flash-lite',
             displayName: 'Gemini 3.5 Flash-Lite',
@@ -24,6 +13,17 @@ const AI_CONFIG = {
                 { value: 'high', label: 'High Reasoning' },
                 { value: 'medium', label: 'Medium Reasoning' },
                 { value: 'low', label: 'Low Reasoning' },
+                { value: 'minimal', label: 'Minimal Reasoning' }
+            ],
+            defaultThinking: 'high'
+        },
+        'gemma-4-31b-it': {
+            name: 'gemma-4-31b-it',
+            displayName: 'Gemma 4 31B IT',
+            version: 'v1beta',
+            supportsThinking: true,
+            thinkingLevels: [
+                { value: 'high', label: 'High Reasoning' },
                 { value: 'minimal', label: 'Minimal Reasoning' }
             ],
             defaultThinking: 'high'
@@ -137,7 +137,15 @@ ${JSON.stringify(systemPrompt, null, 2)}
 6. STEM, CORRECT ANSWER, & DISTRACTOR CONSTRUCTION:
    - EXACTLY 4 OPTIONS: Every item must have 4 choices (indices 0 to 3).
    - ONE DEFENDED CORRECT ANSWER: Unambiguously correct and academically defensible within taught coverage.
-   - THREE CREDIBLE DISTRACTORS: Must represent realistic student misconceptions or common reasoning errors on taught material.
+   - THREE CREDIBLE MISCONCEPTION DISTRACTORS: Must represent realistic student misunderstandings, such as:
+     * Confusing two related taught concepts.
+     * Reversing cause and effect relationships.
+     * Applying a correct rule/principle to the wrong situation or context.
+     * Overgeneralizing a specific rule or exception.
+     * Confusing necessary conditions with sufficient conditions.
+     * Misunderstanding the scope or consequence of a principle.
+   - NO ABSURD DISTRACTORS: Strictly forbid joke options, non-sequiturs, or absurd choices.
+   - NO EXTREME ABSOLUTES AS GIVEAWAYS: Do not make distractors obviously false by inserting words like "always", "never", "completely", "solely", "entirely", or "zero".
    - PARALLEL STRUCTURE & EQUAL LENGTH: All 4 options must be comparable in word count, syntax, and detail. Do NOT make the correct option noticeably longer or more detailed than distractors.
    - NO OPTION SHORTCUTS: Strictly forbid "All of the above", "None of the above", "Both A and B", or combined option choices.
 
@@ -177,7 +185,7 @@ ${JSON.stringify(systemPrompt, null, 2)}
 `;
 
     const modelsToTry = getModelsToTry(selectedModel, useFallback);
-    return await executeAiRequest(apiKey, prompt, modelsToTry, thinkingLevel || 'high');
+    return await executeAiRequest(apiKey, prompt, modelsToTry, thinkingLevel || 'low');
 }
 
 /**
@@ -202,7 +210,7 @@ async function callRefineSegment(inputs) {
         NO MARKDOWN. NO JSON. JUST THE UPDATED CONTENT.`;
 
     const modelsToTry = getModelsToTry(selectedModel, false);
-    const result = await executeAiRequest(apiKey, refinePrompt, modelsToTry, thinkingLevel || 'medium');
+    const result = await executeAiRequest(apiKey, refinePrompt, modelsToTry, thinkingLevel || 'low');
     return result.text ? result.text.replace(/^```html\n?|```$/gm, '').trim() : null;
 }
 
@@ -232,7 +240,7 @@ REFINEMENT RIGOR & INSTRUCTIONAL SCOPE INSTRUCTIONS:
 RETURN ONLY THE UPDATED JSON. NO MARKDOWN.`;
 
     const modelsToTry = getModelsToTry(selectedModel, false);
-    const result = await executeAiRequest(apiKey, prompt, modelsToTry, thinkingLevel || 'medium');
+    const result = await executeAiRequest(apiKey, prompt, modelsToTry, thinkingLevel || 'low');
     if (result.success) {
         let cleanJson = result.text.trim();
         const start = cleanJson.indexOf('[');
@@ -286,7 +294,7 @@ REFINEMENT RIGOR & SCOPE INSTRUCTIONS:
 RETURN ONLY THE UPDATED JSON OBJECT. NO MARKDOWN.`;
 
     const modelsToTry = getModelsToTry(selectedModel, false);
-    const result = await executeAiRequest(apiKey, prompt, modelsToTry, thinkingLevel || 'medium');
+    const result = await executeAiRequest(apiKey, prompt, modelsToTry, thinkingLevel || 'low');
     if (result.success) {
         let cleanJson = result.text.trim();
         const start = cleanJson.indexOf('{');
@@ -345,9 +353,11 @@ ${JSON.stringify(systemPrompt, null, 2)}
    Avoid creating scenarios or question stems similar to these previously accepted items:
    ${previousSummaryText}
 
-4. MANDATORY INSTRUCTIONAL LANGUAGE & STIMULUS RULES:
+4. MANDATORY INSTRUCTIONAL LANGUAGE & DISTRACTOR RULES:
    - Use primary language of competency/notes.
    - Every question MUST begin with an educational lead-in stimulus without giving away the correct answer text.
+   - THREE CREDIBLE MISCONCEPTION DISTRACTORS: Must represent realistic student misunderstandings (e.g., confusing related concepts, reversing cause/effect, applying rules to wrong contexts, overgeneralizing).
+   - NO ABSURD DISTRACTORS & NO EXTREME ABSOLUTES: Strictly forbid joke choices or artificial "always/never/completely" giveaways.
    - All 4 options must be comparable in word count, detail, and grammatical structure.
    - Strictly forbid "All/None of the above" or combined choices.
 
@@ -381,7 +391,7 @@ ${JSON.stringify(systemPrompt, null, 2)}
     }
 
     const modelObj = (typeof getModelConfig === 'function') ? getModelConfig(selectedModel) : { name: selectedModel };
-    const result = await executeAiRequest(apiKey, prompt, [modelObj], thinkingLevel || 'high');
+    const result = await executeAiRequest(apiKey, prompt, [modelObj], thinkingLevel || 'low');
 
     // Reconcile scheduler token accounting if usageMetadata provided
     if (schedulerReqRecord && result && result.diagnostics && result.diagnostics.usageMetadata) {
@@ -396,7 +406,7 @@ ${JSON.stringify(systemPrompt, null, 2)}
 /**
  * Internal helper to handle the Fetch API, diagnostics, and error reporting
  */
-async function executeAiRequest(apiKey, prompt, models, thinkingLevel = 'high') {
+async function executeAiRequest(apiKey, prompt, models, thinkingLevel = 'low') {
     let lastError = '';
     let lastDiagnostics = null;
 
@@ -552,10 +562,61 @@ async function executeAiRequest(apiKey, prompt, models, thinkingLevel = 'high') 
 }
 
 /**
+ * Refines or repairs a single MCQ item based on specific review findings.
+ * Enforces single-repair limit per item.
+ */
+async function callRefineSingleMCQ(inputs) {
+    const { apiKey, subject, competency, notes, questionItem, reviewFinding, selectedModel, thinkingLevel } = inputs;
+
+    const formattedNotes = (notes && typeof notes === 'string' && notes.trim().length > 0) ? notes.trim() : "[NO SPECIFIC TEACHER NOTES PROVIDED]";
+
+    const prompt = `
+Act as a Master Assessment Designer repairing a multiple-choice item in ${subject}.
+
+ORIGINAL ITEM:
+- LEARNING COMPETENCY: "${competency}"
+- TEACHER GUIDANCE & NOTES: "${formattedNotes}"
+- ASSIGNED COGNITIVE LEVEL: "${questionItem.cognitive_level || 'Remembering'}"
+- CURRENT QUESTION TEXT: "${questionItem.question}"
+- CURRENT OPTIONS: ${JSON.stringify(questionItem.options)}
+- CURRENT CORRECT ANSWER INDEX: ${questionItem.answer_index}
+- CURRENT RATIONALE: "${questionItem.rationale || ''}"
+
+PEDAGOGICAL REVIEW FINDINGS & REPAIR INSTRUCTION:
+${reviewFinding}
+
+REPAIR DIRECTIVES:
+1. Fix ONLY the specific quality defect identified in the review findings (e.g. replace an implausible distractor, eliminate answer leakage, or correct answer key alignment).
+2. PRESERVE the intended competency, cognitive operation ("${questionItem.cognitive_level || 'Remembering'}"), and core instructional concept.
+3. Ensure all 4 options remain parallel in length, tone, and grammatical structure.
+4. Ensure exactly 1 option is defensibly correct and all 3 distractors represent plausible student misconceptions.
+5. Do NOT reference option letters (e.g. Option A, Choice B) in the rationale.
+
+REQUIRED JSON OUTPUT SCHEMA:
+Return ONLY a valid JSON object matching this schema (NO MARKDOWN, NO COMMENTS):
+{
+  "question": "Updated educational stimulus followed by clear question stem...",
+  "options": [
+    "Option A text",
+    "Option B text",
+    "Option C text",
+    "Option D text"
+  ],
+  "answer_index": 0,
+  "cognitive_level": "${questionItem.cognitive_level || 'Remembering'}",
+  "rationale": "Updated pedagogical explanation of why the correct answer CONTENT is defensible and why distractors represent common misconceptions."
+}
+`;
+
+    const modelsToTry = getModelsToTry(selectedModel, false);
+    return await executeAiRequest(apiKey, prompt, modelsToTry, thinkingLevel || 'low');
+}
+
+/**
  * Diagnostic Suite for Teacher Manual Testing (Tests A to E)
  */
 async function runDiagnosticTest(testType, options = {}) {
-    const { apiKey, selectedModel = 'gemma-4-31b-it' } = options;
+    const { apiKey, selectedModel = 'gemini-3.5-flash-lite' } = options;
     if (!apiKey) throw new Error("API Key is required for diagnostic test.");
 
     const modelObj = getModelConfig(selectedModel);

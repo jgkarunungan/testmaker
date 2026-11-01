@@ -92,7 +92,7 @@ const AppSession = {
             examTitle: examTitle || 'Assessment',
             category: category,
             totalRequestedItems: totalExamItems,
-            lockedModel: model || 'gemma-4-31b-it',
+            lockedModel: model || 'gemini-3.5-flash-lite',
             lockedThinkingLevel: thinkingLevel || 'high',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

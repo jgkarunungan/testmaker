@@ -124,7 +124,7 @@ const AIScheduler = {
             timestamp: Date.now(),
             estimatedTokens: estTokens,
             actualTokens: null,
-            model: options.model || 'gemma-4-31b-it'
+            model: options.model || 'gemini-3.5-flash-lite'
         };
         this.requestLog.push(reqRecord);
         this.saveLog();

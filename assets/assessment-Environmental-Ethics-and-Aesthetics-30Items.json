@@ -1,0 +1,383 @@
+{
+  "exportType": "full_assessment",
+  "subject": "Introduction to Philosophy of the Human Person",
+  "category": "A",
+  "generatedAt": "2026-03-31T00:00:00.000Z",
+  "itemCount": 30,
+  "data": [
+    {
+      "competency": "Notice disorder in an environment and appreciate order, harmony, and proportion in human and natural spaces",
+      "notes": "Environmental aesthetics, cosmos vs chaos, lived phenomenology, and spatial proportion.",
+      "hours": 15,
+      "questions": [
+        {
+          "question": "A student council is reviewing two proposed waste management plans for the campus. Plan A focuses solely on hiding trash cans behind decorative walls to keep the common areas visually appealing for visitors. Plan B implements clearly marked composting and recycling stations that integrate harmoniously with the campus landscape while actively educating students on proper waste sorting. When evaluating these initiatives through the lens of environmental ethics and aesthetics, which assessment is most philosophically sound?",
+          "options": [
+            "Plan A is superior because it prioritizes immediate visual cleanliness over functional ecological engagement.",
+            "Plan A is more aligned with ecocentrism because concealing waste removes human impact from direct sight.",
+            "Plan B represents a truer form of aesthetic order because it aligns functional environmental care with harmonious design.",
+            "Both plans fail to address the fundamental philosophical nature of beauty since they involve utilitarian objects like trash cans."
+          ],
+          "answer_index": 2,
+          "rationale": "Plan B exemplifies environmental aesthetics by harmonizing utilitarian function with ecological education and visual proportion, demonstrating that true aesthetic order integrates ethical responsibility rather than merely hiding clutter.",
+          "cognitive_level": "Evaluating"
+        },
+        {
+          "question": "A community action group is assessing a public park that has fallen into disuse. One faction argues for paving over a neglected wildflower meadow to install neat, symmetrical rows of concrete benches and modern art sculptures to enforce a strict geometric order. Another faction argues for clearing out accumulated litter, trimming overgrown invasive vines while preserving native plants, and creating defined yet natural walking paths. From the perspective of environmental aesthetics and the philosophy of space, how should these contrasting approaches be critiqued?",
+          "options": [
+            "The second approach is more valid because it respects the natural ecosystem while restoring human order in an intentional, harmonious way.",
+            "Both approaches are equally valid since any form of human intervention automatically improves the natural chaos of an ecosystem.",
+            "The first approach is better for mental well-being because artificial structures completely eliminate the psychological stress of natural disorder.",
+            "The first approach is superior because strict geometric symmetry is the only true historical standard of the cosmos."
+          ],
+          "answer_index": 0,
+          "rationale": "Environmental aesthetics values the harmonious integration of human design with existing natural systems rather than the artificial suppression of native ecology through rigid geometric pavement.",
+          "cognitive_level": "Evaluating"
+        },
+        {
+          "question": "A student is evaluating two different layouts for a shared study desk. Layout A arranges books, stationery, and lamps based purely on immediate reach without regard to visual symmetry or clutter, while Layout B organizes items by size, frequency of use, and proportional balance to create a calm atmosphere. From an environmental aesthetics perspective, how should the student assess these two arrangements?",
+          "options": [
+            "Layout B is inferior because imposing strict visual symmetry on a workspace stifles authentic human creativity and expression.",
+            "Layout A is more effective because prioritizing raw functional utility completely supersedes any need for aesthetic organization.",
+            "Layout B is superior because integrating proportion and order fosters peace of mind and reflects a philosophical appreciation for harmony.",
+            "Both layouts are philosophically identical since physical objects ultimately have no bearing on human mental states or focus."
+          ],
+          "answer_index": 2,
+          "rationale": "Proportional balance and spatial order reduce cognitive friction and promote inner tranquility, demonstrating the philosophical principle that external spatial harmony influences internal mental states.",
+          "cognitive_level": "Analyzing"
+        },
+        {
+          "question": "A school administrator observes that a classroom frequently becomes disorganized by midday, with students leaving materials scattered across shared tables, which leads to increased student frustration and lowered productivity. When analyzing this situation through the lens of lived phenomenology and the psychology of space, what core relationship is being demonstrated?",
+          "options": [
+            "Physical disorder in an immediate environment can contribute to distraction, heightened frustration, and reduced well-being among occupants.",
+            "Disorganized spaces exclusively affect aesthetic appearance without having any connection to the ethical responsibilities of shared community care.",
+            "The displacement of objects in a classroom indicates that students inherently prefer chaotic ecosystems over structured human spaces.",
+            "Classroom clutter is an inevitable natural phenomenon that encourages spontaneous learning among all students."
+          ],
+          "answer_index": 0,
+          "rationale": "Environmental psychology and spatial phenomenology demonstrate that persistent physical clutter in shared spaces imposes cognitive load, heightening occupant frustration and hindering focused activity.",
+          "cognitive_level": "Analyzing"
+        },
+        {
+          "question": "A student observes that their study table has accumulated stacked reference books, loose stationery, and tangled electronic cables, which correlates with a noticeable decline in their ability to concentrate. When analyzing this situation through the lens of environmental aesthetics and the psychology of space, which underlying philosophical connection is most evident?",
+          "options": [
+            "Physical disorder in immediate human spaces directly mirrors the inherent chaos and unpredictability found in unmanaged natural ecosystems.",
+            "The spatial arrangement of material objects significantly influences mental focus, demonstrating that external harmony affects internal cognitive well-being.",
+            "Functional utility and aesthetic beauty are mutually exclusive qualities that cannot be simultaneously achieved within a shared living or studying area.",
+            "A cluttered workspace is purely a matter of subjective personal preference with no measurable impact on human psychological functioning or productivity."
+          ],
+          "answer_index": 1,
+          "rationale": "The arrangement of physical objects in human micro-environments directly affects mental clarity, illustrating that spatial order and visual harmony foster cognitive well-being.",
+          "cognitive_level": "Analyzing"
+        },
+        {
+          "question": "During a neighborhood cleanup initiative, participants evaluate an open lot where discarded plastics and broken furniture have been left haphazardly near native vegetation. When analyzing this environmental degradation from an ethical standpoint of care and organization, how does this scenario reflect a failure in environmental stewardship?",
+          "options": [
+            "It illustrates a disconnection from the concept of putting things in their proper place, where ecological neglect manifests as spatial and environmental disorder.",
+            "It shows that aesthetic improvements in public spaces should always take priority over functional waste removal and sustainability practices.",
+            "It demonstrates a purely administrative oversight regarding municipal zoning laws rather than a broader philosophical failure of human responsibility.",
+            "It proves that artificial human spaces are inherently incapable of achieving the same natural balance found in undisturbed ecological communities."
+          ],
+          "answer_index": 0,
+          "rationale": "Environmental stewardship entails an ethical commitment to maintaining spatial order and ecological integrity; dumping waste reflects a fundamental breakdown in environmental responsibility.",
+          "cognitive_level": "Applying"
+        },
+        {
+          "question": "A school planning committee is examining a communal lounge area where student belongings are consistently left scattered across tables and floors, leading to mounting frustration among users. When analyzing this situation through the lens of environmental aesthetics and the psychology of space, how does the persistent disorder impact the collective human experience within the room?",
+          "options": [
+            "It disrupts the visual harmony and structural proportion necessary for a calm, focused environment.",
+            "It encourages individuals to adopt minimalist living habits through constant exposure to physical constraints.",
+            "It fosters an atmosphere of casual comfort and unconstrained creative freedom for all occupants.",
+            "It demonstrates a strict adherence to anthropocentric principles by prioritizing individual human comfort."
+          ],
+          "answer_index": 0,
+          "rationale": "Unmanaged spatial disorder breaks the visual proportion and environmental harmony required for focus and communal serenity.",
+          "cognitive_level": "Applying"
+        },
+        {
+          "question": "An office manager evaluates two competing proposals for organizing a shared supply room. Proposal A arranges items strictly by utilitarian frequency of use, while Proposal B groups materials according to color-coded visual harmony, proportional balance, and functional accessibility. In analyzing Proposal B from the perspective of intentional design and environmental stewardship, what underlying philosophical principle is primarily being demonstrated?",
+          "options": [
+            "A strict alignment with ecocentric conservation models by reducing the total volume of consumed office materials",
+            "A purely anthropocentric disregard for the functional utility of supplies in favor of superficial decoration",
+            "An intentional rejection of human spatial organization in order to replicate unmanaged natural ecosystems",
+            "An understanding that aesthetics, order, and function are deeply interconnected acts of respect for a shared space"
+          ],
+          "answer_index": 3,
+          "rationale": "Harmonious spatial design merges utility with aesthetic respect, showing that organizing shared environments is a practical expression of ethical stewardship.",
+          "cognitive_level": "Analyzing"
+        },
+        {
+          "question": "A student group is examining the physical layout of their school's library reading room, where chairs are frequently left skewed, books are returned to random shelves, and tables are cluttered with discarded paper. When evaluating how this spatial disarray influences human behavior and cognition, which analytical insight best connects physical disorder to philosophical environmental aesthetics?",
+          "options": [
+            "Spatial disorder has no measurable impact on human well-being as long as individuals can successfully navigate around physical obstacles.",
+            "Misplaced objects in a public area primarily indicate an active community rejection of traditional architectural standards.",
+            "Physical clutter serves as a neutral backdrop that encourages spontaneous and uninhibited creative thinking among students.",
+            "Disorganized surroundings disrupt the harmony and proportion necessary for fostering mental focus, peace of mind, and respect for shared spaces."
+          ],
+          "answer_index": 3,
+          "rationale": "Environmental aesthetics highlights that visual and spatial disarray undermines cognitive serenity and mutual respect in communal learning environments.",
+          "cognitive_level": "Analyzing"
+        },
+        {
+          "question": "During a neighborhood environmental assessment, community members analyze an open drainage ditch clogged with plastic packaging and organic debris alongside overgrown native plants. In determining the relationship between artificial waste accumulation and ecological balance, how should the community categorize this specific type of spatial displacement?",
+          "options": [
+            "As a disruption of proper ecological placement where misplaced synthetic materials actively degrade environmental harmony and stewardship",
+            "As a minor aesthetic flaw that alters the visual perspective of the landscape without affecting broader ecological functions",
+            "As an intentional landscape design strategy meant to highlight the intersection between urban development and wild nature",
+            "As an example of natural ecosystem succession where human artifacts temporarily integrate into biological life cycles"
+          ],
+          "answer_index": 0,
+          "rationale": "Synthetic refuse in natural waterways represents spatial misplacement and environmental degradation, violating the principles of ecological harmony.",
+          "cognitive_level": "Understanding"
+        },
+        {
+          "question": "A school publication board is reviewing a newly redesigned art studio where the easels, drying racks, and supply bins have been arranged to mirror the natural radial patterns found in flower petals. How does this spatial layout demonstrate the philosophical concept of environmental aesthetics?",
+          "options": [
+            "It applies the ancient Greek notion of cosmos by introducing harmonious proportion and order into a human space.",
+            "It eliminates the psychological impact of space by making the room completely devoid of visual stimuli.",
+            "It prioritizes strict anthropocentrism by bending natural ecosystems entirely to human functional demands.",
+            "It focuses exclusively on superficial decor rather than addressing the functional utility of the studio."
+          ],
+          "answer_index": 0,
+          "rationale": "Incorporating natural geometry and proportional order into human architecture embodies the concept of 'cosmos'—an ordered, harmonious whole.",
+          "cognitive_level": "Understanding"
+        },
+        {
+          "question": "A neighborhood youth organization is examining an outdoor community garden where gardening tools have been left scattered across walking paths while compost bins sit empty near the entrance. In analyzing this specific type of physical disorder, what underlying philosophical insight can the members draw regarding human behavior and space?",
+          "options": [
+            "The presence of scattered items has zero psychological effect on individuals as long as the primary plants continue to grow.",
+            "Leaving tools out of place represents an optimal ecological balance that mimics the untamed nature of natural ecosystems.",
+            "Displaced objects and environmental clutter can disrupt mental focus, communal well-being, and respect for shared spaces.",
+            "Scattered equipment in public areas reflects a creative expression of individual autonomy rather than spatial negligence."
+          ],
+          "answer_index": 2,
+          "rationale": "Spatial disorganization and scattered equipment in shared community spaces create visual friction and undermine the collaborative respect necessary for communal well-being.",
+          "cognitive_level": "Understanding"
+        },
+        {
+          "question": "When examining ancient Greek philosophical views on the universe, which specific term was used to describe a system characterized by order, harmony, and proportion rather than chaos?",
+          "options": [
+            "The term ethos refers to the concept of an ordered universe.",
+            "The term polis refers to the concept of an ordered universe.",
+            "The term psyche refers to the concept of an ordered universe.",
+            "The term cosmos refers to the concept of an ordered universe."
+          ],
+          "answer_index": 3,
+          "rationale": "In ancient Greek philosophy, 'cosmos' explicitly signifies an ordered, harmonious world system governed by rational proportion, contrasted with 'chaos'.",
+          "cognitive_level": "Remembering"
+        },
+        {
+          "question": "In the context of environmental aesthetics and human spaces, how does intentional organization of a physical environment go beyond merely making a room look visually appealing?",
+          "options": [
+            "It eliminates the need for any future environmental maintenance or cleaning.",
+            "It maximizes both functional harmony and psychological peace of mind.",
+            "It guarantees an increase in the commercial market value of the property.",
+            "It completely replaces natural ecosystems with artificial human structures."
+          ],
+          "answer_index": 1,
+          "rationale": "Intentional spatial organization unites practical efficiency with cognitive serenity, enhancing overall well-being beyond surface decoration.",
+          "cognitive_level": "Understanding"
+        },
+        {
+          "question": "A student organizing a community resource center notices that donated books, electronic equipment, and clothing items have been piled haphazardly in a central hallway. To apply the principle of environmental aesthetics and ethical organization, what practical step should the student take?",
+          "options": [
+            "Cover the pile with a decorative cloth so that the visual appearance of the hallway is instantly improved.",
+            "Leave the items in the hallway until community members individually claim whatever resources they happen to need.",
+            "Move the entire pile outdoors to an open area so that indoor foot traffic is no longer obstructed by clutter.",
+            "Sort the items into designated categories and place them into appropriate storage units to restore functional harmony."
+          ],
+          "answer_index": 3,
+          "rationale": "Categorizing and storing resources restores structural order and functional utility, reflecting the core principles of spatial organization and stewardship.",
+          "cognitive_level": "Applying"
+        }
+      ]
+    },
+    {
+      "competency": "Demonstrate virtues of prudence, frugality, and intergenerational justice toward the environment",
+      "notes": "Sustainable development, intergenerational obligations, ecocentrism, biophilia, and ecological eudaimonia.",
+      "hours": 15,
+      "questions": [
+        {
+          "question": "When examining the philosophical concept that emphasizes our moral obligation to ensure that the needs of future generations are not compromised by current resource consumption, which specific term is traditionally used to define this principle?",
+          "options": [
+            "Intergenerational justice",
+            "Economic utilitarianism",
+            "Biophilic adaptation",
+            "Anthropocentric mastery"
+          ],
+          "answer_index": 0,
+          "rationale": "Intergenerational justice establishes the ethical responsibility of current generations to preserve ecological integrity and resources for unborn future populations.",
+          "cognitive_level": "Remembering"
+        },
+        {
+          "question": "When evaluating how ecological well-being directly links to human physical health and survival, how does active care for surrounding ecosystems primarily support local populations?",
+          "options": [
+            "By lowering atmospheric temperatures through industrial carbon trading",
+            "By securing clean air, safe water sources, and reliable food supplies",
+            "By maximizing mineral extraction to increase municipal tax revenues",
+            "By expanding commercial real estate markets for urban developers"
+          ],
+          "answer_index": 1,
+          "rationale": "Ecological health provides essential biological life-support services—clean air, potable water, and nutrient-rich food—that underpin human survival.",
+          "cognitive_level": "Understanding"
+        },
+        {
+          "question": "A barangay council is designing a new public park and weighing whether to pave over a natural wetland for a parking lot or preserve the green space for community recreation and mental wellness. If the council applies the principle of biophilia to support human well-being, which action should they choose?",
+          "options": [
+            "Constructing the parking lot to maximize immediate commercial revenue and vehicle accessibility for local motorists.",
+            "Dividing the land equally to build a smaller parking area while converting the remaining space into paved pathways with imported exotic plants.",
+            "Preserving the natural wetland and integrating walking trails with native vegetation to reduce community stress and anxiety.",
+            "Replacing the wetland with an artificial turf sports complex to provide organized physical exercise rather than passive nature views."
+          ],
+          "answer_index": 2,
+          "rationale": "Biophilia posits an innate human affinity for natural life; preserving native wetlands and green spaces restores psychological well-being and mitigates urban stress.",
+          "cognitive_level": "Applying"
+        },
+        {
+          "question": "In environmental ethics, which principle establishes a direct moral obligation to consider the rights, welfare, and resource security of future generations in present decision-making?",
+          "options": [
+            "Deep ecological reduction",
+            "Intergenerational justice",
+            "Economic utilitarianism",
+            "Anthropocentric dominion"
+          ],
+          "answer_index": 1,
+          "rationale": "Intergenerational justice is the ethical principle that explicitly defines humanity's moral duty to preserve biosphere stability and natural resources for upcoming generations.",
+          "cognitive_level": "Understanding"
+        },
+        {
+          "question": "When examining the philosophical shift from an anthropocentric view to an ecocentric perspective, how does environmental philosophy define humanity's place in the natural world?",
+          "options": [
+            "Humanity exists as a separate entity designed to master and exploit natural ecosystems for continuous economic growth.",
+            "Humanity acts as an external observer whose actions carry no direct consequence for the long-term survival of the biosphere.",
+            "Humanity functions as just one interconnected thread within a larger ecological web where environmental harm directly impacts human well-being.",
+            "Humanity maintains absolute stewardship solely to preserve scenic landscapes for recreational enjoyment and aesthetic appreciation."
+          ],
+          "answer_index": 2,
+          "rationale": "Ecocentrism reframes humans as interconnected members of the biosphere rather than rulers above it, recognizing that ecological damage inevitably reverberates back onto human health.",
+          "cognitive_level": "Understanding"
+        },
+        {
+          "question": "A local government is drafting a municipal ordinance to balance economic expansion with ecological preservation for future inhabitants. Which policy decision best exemplifies the core principle of sustainable development?",
+          "options": [
+            "Requiring all new commercial developments to integrate green spaces and renewable energy systems to meet current needs without compromising future resources.",
+            "Restricting all forms of community expansion and infrastructure development to keep local ecosystems completely untouched by human activity.",
+            "Utilizing non-renewable energy reserves rapidly before technological alternatives become financially burdensome to the current administration.",
+            "Granting immediate clearance for industrial manufacturing plants to maximize short-term employment and municipal revenue."
+          ],
+          "answer_index": 0,
+          "rationale": "Sustainable development harmonizes economic progress with ecological protection, ensuring current societal needs are fulfilled while preserving natural capacity for future inhabitants.",
+          "cognitive_level": "Applying"
+        },
+        {
+          "question": "When studying the core principles of environmental philosophy, which specific term defines the standard development framework focused on meeting present needs without compromising the capacity of future generations?",
+          "options": [
+            "Deep ecology preservation",
+            "Sustainable development",
+            "Anthropocentric conservation",
+            "Ecocentric regeneration"
+          ],
+          "answer_index": 1,
+          "rationale": "Sustainable development is the universally recognized framework requiring responsible resource use that satisfies current human needs while safeguarding ecological assets for posterity.",
+          "cognitive_level": "Remembering"
+        },
+        {
+          "question": "When examining the philosophical perspective that humans are merely one interconnected thread within the broader ecological web rather than masters of nature, how does this viewpoint reframe human well-being?",
+          "options": [
+            "It views natural environments exclusively as raw materials meant to be transformed for individual utility and profit.",
+            "It suggests that human communities can remain completely isolated from ecological degradation through technological shielding.",
+            "It asserts that human health and flourishing are fundamentally dependent on the health and stability of the surrounding ecosystem.",
+            "It prioritizes maximum resource extraction to ensure that current human populations achieve immediate economic security."
+          ],
+          "answer_index": 2,
+          "rationale": "An ecocentric framework recognizes that human flourishing (eudaimonia) and physiological health are intrinsically tied to biological diversity and ecosystem stability.",
+          "cognitive_level": "Analyzing"
+        },
+        {
+          "question": "A local youth organization is planning a neighborhood clean-up drive and considering how to reduce their everyday consumption of single-use plastics to minimize environmental harm. Which philosophical virtue is best demonstrated when individuals deliberately consume only what is necessary to reduce their ecological footprint?",
+          "options": [
+            "Applying the virtue of frugality by intentionally limiting material waste and unnecessary consumption",
+            "Exhibiting the standard of anthropocentrism by prioritizing human convenience over resource limits",
+            "Utilizing the framework of intergenerational justice by demanding strict government regulations",
+            "Practicing the principle of deep ecology by completely detaching from modern economic systems"
+          ],
+          "answer_index": 0,
+          "rationale": "Frugality as an environmental virtue involves moderate and mindful resource consumption to minimize ecological impact and prevent unnecessary waste.",
+          "cognitive_level": "Applying"
+        },
+        {
+          "question": "How does the principle of intergenerational justice serve as an essential moral foundation for sustainable development?",
+          "options": [
+            "It assumes that accumulating monetary capital in present markets automatically compensates future generations for depleted natural resources.",
+            "It establishes a moral obligation to preserve essential ecological systems so that future populations retain the capacity to satisfy their needs.",
+            "It suggests that resource conservation is secondary because technological innovation will naturally resolve future environmental scarcity.",
+            "It focuses on distributing existing natural resources equally among current living populations without regard to future ecological capacity."
+          ],
+          "answer_index": 1,
+          "rationale": "Intergenerational justice anchors sustainable development by establishing an ethical duty toward unborn generations, requiring current societies to manage resources within ecological limits so future populations can fulfill their basic needs.",
+          "cognitive_level": "Understanding"
+        },
+        {
+          "question": "A timber company proposes clear-cutting a primary watershed forest to maximize short-term financial profit, claiming that future generations will invent synthetic substitutes for clean water. How does the principle of intergenerational justice critique this decision?",
+          "options": [
+            "It condemns clear-cutting because depleting vital water systems imposes severe, long-term environmental risks on future generations.",
+            "It justifies clear-cutting because future technological innovations will resolve resource scarcity.",
+            "It supports the proposal provided that timber proceeds are distributed among current shareholders.",
+            "It views the proposal as ethically neutral since future citizens have no voice in present markets."
+          ],
+          "answer_index": 0,
+          "rationale": "Intergenerational justice forbids depleting critical ecological life-support systems for short-term gain, holding that current generations have a moral duty to preserve essential natural resources for posterity.",
+          "cognitive_level": "Analyzing"
+        },
+        {
+          "question": "A local municipality is designing a new residential zone and must decide how to incorporate green spaces into the layout. Based on the principles of biophilia and environmental health, which planning strategy best supports both psychological well-being and ecological sustainability?",
+          "options": [
+            "Restricting public access to natural areas entirely to protect wildlife from any human disturbance.",
+            "Integrating accessible community parks and preserved tree lines to lower stress levels and purify air.",
+            "Converting every available square meter into high-density commercial storefronts to maximize local revenue.",
+            "Replacing all natural vegetation with synthetic turf to eliminate maintenance costs and water usage."
+          ],
+          "answer_index": 1,
+          "rationale": "Integrating urban parks and natural vegetation satisfies biophilic human needs for contact with nature while delivering ecological ecosystem benefits.",
+          "cognitive_level": "Applying"
+        },
+        {
+          "question": "How does the framework of sustainable development differ from conventional economic growth models in environmental philosophy?",
+          "options": [
+            "Sustainable development treats natural resource extraction as an unlimited factor that automatically regenerates through market demand.",
+            "Sustainable development seeks to halt all urban and industrial expansion to keep natural landscapes completely untouched by human activity.",
+            "Sustainable development permits unrestricted resource consumption provided that businesses pay environmental taxes to government funds.",
+            "Sustainable development integrates ecological limits and long-term resource preservation directly into human economic planning."
+          ],
+          "answer_index": 3,
+          "rationale": "Sustainable development differs from conventional economic growth models by explicitly integrating ecological boundaries and long-term resource preservation directly into economic planning, ensuring that current progress does not undermine environmental stability.",
+          "cognitive_level": "Understanding"
+        },
+        {
+          "question": "When examining the philosophical perspective that humans are merely one interconnected thread within the broader ecological web rather than masters of nature, how does this shift in viewpoint influence our understanding of human health?",
+          "options": [
+            "It suggests that economic growth should always take precedence over ecological preservation.",
+            "It indicates that mental health benefits derived from nature are purely psychological illusions.",
+            "It demonstrates that human well-being and eudaimonia are profoundly interconnected with and dependent upon the health of the surrounding ecosystem.",
+            "It proves that human physical survival is entirely independent of natural resource availability."
+          ],
+          "answer_index": 2,
+          "rationale": "Ecocentric philosophy demonstrates that human eudaimonia (flourishing) is intimately connected to ecological stability and biosphere health.",
+          "cognitive_level": "Analyzing"
+        },
+        {
+          "question": "A city council is debating a proposed industrial zoning policy. One proposal prioritizes maximizing short-term factory output, while an alternative proposal integrates the triple bottom line framework to balance economic growth, social welfare, and ecosystem protection. How should the council apply the principle of intergenerational justice to evaluate these options?",
+          "options": [
+            "By approving the maximum output plan so that current citizens accumulate enough financial capital to solve future environmental problems independently.",
+            "By selecting the balanced framework to ensure that natural resources and ecological stability are not exhausted at the expense of unborn populations.",
+            "By focusing exclusively on local employment rates, assuming that future generations will naturally adapt to whatever landscape is left behind.",
+            "By delaying all industrial development indefinitely to completely prevent any human modification or use of natural resources."
+          ],
+          "answer_index": 1,
+          "rationale": "Intergenerational justice mandates choosing policies that preserve critical natural capital and climate stability for unborn future citizens.",
+          "cognitive_level": "Evaluating"
+        }
+      ]
+    }
+  ]
+}

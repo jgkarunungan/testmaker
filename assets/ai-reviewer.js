@@ -29,8 +29,8 @@ const AppReviewSession = {
         const fingerprint = generateContentFingerprint(resultsSnapshot);
         const subjectName = resultsSnapshot[0]?.subjectName || 'General Assessment';
         const category = resultsSnapshot[0]?.category || 'A';
-        const selectedModel = options.selectedModel || (typeof state !== 'undefined' ? state.selectedModel : 'gemma-4-31b-it');
-        const thinkingLevel = options.thinkingLevel || (typeof state !== 'undefined' ? state.thinkingLevel : 'high');
+        const selectedModel = options.selectedModel || (typeof state !== 'undefined' ? state.selectedModel : 'gemini-3.5-flash-lite');
+        const thinkingLevel = options.thinkingLevel || (typeof state !== 'undefined' ? state.thinkingLevel : 'medium');
 
         // Flatten items with stable identifiers
         const reviewBatchItems = [];
@@ -72,7 +72,7 @@ const AppReviewSession = {
             thinkingLevel,
             contentFingerprint: fingerprint,
             totalItems: reviewBatchItems.length,
-            batchSize: 1, // Single-item micro-batch default for maximum stability and lower prompt complexity
+            batchSize: 2, // Default 2 items per review micro-batch; adaptive reduction to 1 item on truncation
             reviewBatchItems,
             originalItemMap,
             itemReviewMap: {}, // Map of itemId -> AI review object
@@ -151,11 +151,12 @@ const AIReviewer = {
             throw new Error("API Key is required to run AI Quality Review. Please enter your key in Settings.");
         }
 
+        const activeModel = options.selectedModel || (typeof state !== 'undefined' ? state.selectedModel : 'gemini-3.5-flash-lite');
         const currentFingerprint = generateContentFingerprint(resultsSnapshot);
         let session = AppReviewSession.loadSavedSession();
 
-        // Check if saved session matches active examination fingerprint
-        if (!session || session.contentFingerprint !== currentFingerprint || session.status === 'COMPLETED') {
+        // Check if saved session matches active examination fingerprint AND reviewer model
+        if (!session || session.contentFingerprint !== currentFingerprint || session.reviewerModel !== activeModel || session.status === 'COMPLETED') {
             session = AppReviewSession.createSession(resultsSnapshot, options);
         } else {
             session.status = 'IN_PROGRESS';
@@ -194,8 +195,8 @@ const AIReviewer = {
             const firstComp = pendingItems[0].competency;
             const compPendingItems = pendingItems.filter(item => item.competency === firstComp);
 
-            // Take micro-batch of size session.batchSize (default 1 item for single-item diagnostic stability)
-            const targetBatch = compPendingItems.slice(0, session.batchSize || 1);
+            // Take micro-batch of size session.batchSize (default 2 items)
+            const targetBatch = compPendingItems.slice(0, session.batchSize || 2);
             const prompt = this.buildBlindReviewBatchPrompt(targetBatch, session.subjectName, session.category);
 
             if (typeof options.onProgress === 'function') {
@@ -215,7 +216,7 @@ const AIReviewer = {
                 }
 
                 const modelObj = (typeof getModelConfig === 'function') ? getModelConfig(session.reviewerModel) : { name: session.reviewerModel };
-                const aiResult = await executeAiRequest(apiKey, prompt, [modelObj], session.thinkingLevel || 'high');
+                const aiResult = await executeAiRequest(apiKey, prompt, [modelObj], session.thinkingLevel || 'medium');
 
                 if (schedulerReqRecord && aiResult && aiResult.diagnostics && aiResult.diagnostics.usageMetadata) {
                     if (typeof AIScheduler !== 'undefined' && typeof AIScheduler.reconcileUsage === 'function') {
@@ -381,7 +382,10 @@ const AIReviewer = {
                 weakDistractorCount,
                 answerLeakageCount,
                 conceptOverlapCount,
-                rationaleContradictionCount
+                redundantQuestionCount: conceptOverlapCount,
+                rationaleContradictionCount,
+                rationaleOptionMappingErrorCount: rationaleContradictionCount,
+                criticalIssueCount: itemReports.filter(i => i.issues && i.issues.some(iss => iss.severity === 'CRITICAL')).length
             },
             examWideFindings,
             itemReports
@@ -568,26 +572,57 @@ ${JSON.stringify(itemsBatch, null, 2)}
             if (normalizedStatus === 'KEEP') normalizedStatus = 'IMPROVE_COGNITIVE_MISMATCH';
             issues.push({
                 criterion: "Cognitive Level Mismatch",
-                severity: "WARNING",
+                severity: "MAJOR",
                 explanation: `Declared cognitive level is "${origQuestion.cognitive_level}", but actual required mental operation is "${actualLevel}".`,
                 suggested_correction: "Update cognitive level label or adjust question cognitive demand."
             });
         }
 
-        // 6. Mandatory Rationale Validation (Position Contradiction Check)
+        // 6. Mandatory Rationale Validation (Position & Semantic Contradiction Checks)
         let rationaleContradiction = false;
         const rationaleText = origQuestion.rationale || '';
         if (rationaleText.trim().length > 0) {
-            const matchLetter = rationaleText.match(/\b(?:option|choice|letter)\s+([a-d])\b/i);
-            if (matchLetter && matchLetter[1]) {
-                const referencedLetterIdx = matchLetter[1].toUpperCase().charCodeAt(0) - 65;
+            // Position letter contradiction checks
+            const matchLetterCorrect = rationaleText.match(/\b(?:option|choice|letter)\s+([a-d])\s+(?:is|represents|shows)?\s*(?:the\s+)?(?:correct|right|best|true|defensible)\b/i);
+            const matchLetterIncorrect = rationaleText.match(/\b(?:option|choice|letter)\s+([a-d])\s+(?:is|represents|shows)?\s*(?:incorrect|false|wrong|invalid)\b/i);
+
+            if (matchLetterCorrect && matchLetterCorrect[1]) {
+                const referencedLetterIdx = matchLetterCorrect[1].toUpperCase().charCodeAt(0) - 65;
                 if (referencedLetterIdx !== origQuestion.answer_index) {
                     rationaleContradiction = true;
                     issues.unshift({
                         criterion: "Rationale Position Contradiction",
                         severity: "CRITICAL",
-                        explanation: `Rationale text references Option ${matchLetter[1].toUpperCase()}, which contradicts the recorded answer key position (Option ${String.fromCharCode(65 + origQuestion.answer_index)}).`,
-                        suggested_correction: "Revise rationale to describe answer content rather than option position letters."
+                        explanation: `Rationale text states Option ${matchLetterCorrect[1].toUpperCase()} is correct, which contradicts the recorded answer key position (Option ${String.fromCharCode(65 + origQuestion.answer_index)}).`,
+                        suggested_correction: "Update answer_index or revise rationale position letter."
+                    });
+                }
+            }
+
+            if (matchLetterIncorrect && matchLetterIncorrect[1]) {
+                const referencedLetterIdx = matchLetterIncorrect[1].toUpperCase().charCodeAt(0) - 65;
+                if (referencedLetterIdx === origQuestion.answer_index) {
+                    rationaleContradiction = true;
+                    issues.unshift({
+                        criterion: "Rationale Position Contradiction",
+                        severity: "CRITICAL",
+                        explanation: `Rationale text states Option ${matchLetterIncorrect[1].toUpperCase()} is incorrect, but Option ${matchLetterIncorrect[1].toUpperCase()} is recorded as the correct answer key.`,
+                        suggested_correction: "Update answer_index or revise rationale position letter."
+                    });
+                }
+            }
+
+            // Semantic contradiction check against correct option text
+            if (Array.isArray(origQuestion.options) && origQuestion.answer_index >= 0 && origQuestion.answer_index < 4) {
+                const correctOptText = (origQuestion.options[origQuestion.answer_index] || '').trim().toLowerCase();
+                const lowerRationale = rationaleText.toLowerCase();
+                if (correctOptText.length > 10 && (lowerRationale.includes(`"${correctOptText}" is incorrect`) || lowerRationale.includes(`"${correctOptText}" is false`))) {
+                    rationaleContradiction = true;
+                    issues.unshift({
+                        criterion: "Rationale Semantic Contradiction",
+                        severity: "CRITICAL",
+                        explanation: "Rationale text explicitly asserts that the correct answer option is incorrect.",
+                        suggested_correction: "Revise rationale to accurately explain why the correct option content is defensible."
                     });
                 }
             }
@@ -601,7 +636,10 @@ ${JSON.stringify(itemsBatch, null, 2)}
         if (typeof AppLogic !== 'undefined' && typeof AppLogic.checkHeuristicQualityWarnings === 'function') {
             const localWarnings = AppLogic.checkHeuristicQualityWarnings(origQuestion, allQuestionsList);
             localWarnings.forEach(warn => {
-                if (warn.includes("All/None") || warn.includes("distractor") || warn.includes("identical")) {
+                if (warn.includes("absurd") || warn.includes("Weak or absurd") || warn.includes("All/None")) {
+                    weakDistractors = true;
+                    issues.push({ criterion: "Distractor Quality", severity: "MAJOR", explanation: warn, suggested_correction: "Improve distractor plausibility with domain-specific misconceptions." });
+                } else if (warn.includes("distractor") || warn.includes("identical")) {
                     weakDistractors = true;
                     issues.push({ criterion: "Distractor Quality", severity: "WARNING", explanation: warn, suggested_correction: "Improve distractor plausibility." });
                 }
@@ -616,12 +654,21 @@ ${JSON.stringify(itemsBatch, null, 2)}
             });
         }
 
-        // 8. HARD FAILURE RULE ENFORCEMENT
+        // 8. THREE-TIER SEVERITY ACCEPTANCE RULE ENFORCEMENT
+        // - CRITICAL: Cannot receive KEEP under any circumstances (forces REPLACE or IMPROVE).
+        // - MAJOR: Cannot receive KEEP while unresolved (forces IMPROVE / TEACHER_REVIEW).
+        // - WARNING / MINOR: May receive KEEP with warning recorded.
         const hasCriticalIssue = issues.some(i => i.severity === 'CRITICAL') || answerKeyDiscrepancy || defensibleIndices.length !== 1 || answerLeakage || rationaleContradiction || !hasFourOptions;
+        const hasMajorIssue = issues.some(i => i.severity === 'MAJOR');
 
-        if (finalStatus === 'KEEP' && hasCriticalIssue) {
-            finalStatus = (defensibleIndices.length !== 1 || answerKeyDiscrepancy || !hasFourOptions) ? 'REPLACE' : 'IMPROVE';
-            if (normalizedStatus === 'KEEP') normalizedStatus = 'IMPROVE_OTHER';
+        if (finalStatus === 'KEEP') {
+            if (hasCriticalIssue) {
+                finalStatus = (defensibleIndices.length !== 1 || answerKeyDiscrepancy || !hasFourOptions) ? 'REPLACE' : 'IMPROVE';
+                if (normalizedStatus === 'KEEP') normalizedStatus = 'IMPROVE_OTHER';
+            } else if (hasMajorIssue) {
+                finalStatus = 'IMPROVE';
+                if (normalizedStatus === 'KEEP') normalizedStatus = 'IMPROVE_OTHER';
+            }
         }
 
         return {
@@ -694,6 +741,32 @@ ${JSON.stringify(itemsBatch, null, 2)}
             }
         });
 
+        // 3. Check for cross-item concept target redundancy (2 or more items sharing target & cognitive level)
+        const conceptMap = new Map();
+        const keyTerms = ['spiral of silence', 'conversational narcissism', 'media literacy', 'information literacy', 'technology literacy', 'intergenerational justice', 'sustainable development'];
+
+        keyTerms.forEach(term => {
+            itemReports.forEach(item => {
+                const fullText = ((item.questionStem || '') + ' ' + (item.competency || '')).toLowerCase();
+                const level = item.originalCognitiveLevel || item.actualCognitiveLevel || 'Remembering';
+                if (fullText.includes(term)) {
+                    const clusterKey = `${term}|${level}`;
+                    if (!conceptMap.has(clusterKey)) conceptMap.set(clusterKey, { term, level, items: [] });
+                    conceptMap.get(clusterKey).items.push(item.itemId);
+                }
+            });
+        });
+
+        conceptMap.forEach(({ term, level, items }) => {
+            if (items.length >= 2) {
+                warnings.push({
+                    type: "CROSS_ITEM_CONCEPT_REDUNDANCY",
+                    title: `Cross-Item Concept Redundancy ("${term.toUpperCase()}" at ${level})`,
+                    explanation: `${items.length} items [${items.join(', ')}] test "${term}" using the same cognitive operation (${level}). Consider diversifying reasoning tasks or scenarios.`
+                });
+            }
+        });
+
         return warnings;
     },
 
@@ -743,7 +816,7 @@ ${JSON.stringify(itemsBatch, null, 2)}
             </div>
 
             <!-- Summary Badges Grid -->
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
                 <div class="p-3 bg-green-500/10 border border-green-500/20 rounded-2xl text-center">
                     <span class="text-2xl font-black text-green-400 block">${summary.keepCount}</span>
                     <span class="text-[10px] uppercase font-bold text-green-300 tracking-wider">KEEP</span>
@@ -763,6 +836,30 @@ ${JSON.stringify(itemsBatch, null, 2)}
                 <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-2xl text-center">
                     <span class="text-2xl font-black text-slate-300 block">${summary.totalItems}</span>
                     <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">TOTAL REVIEWED</span>
+                </div>
+            </div>
+
+            <!-- Detailed Quality Metrics Strip -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6 text-xs text-slate-400">
+                <div class="p-2 bg-slate-900 rounded-xl border border-slate-800 text-center">
+                    <span class="text-slate-500 block text-[9px] uppercase font-bold">Key Discrepancies</span>
+                    <strong class="${summary.discrepancyCount > 0 ? 'text-red-400 font-bold' : 'text-slate-300'}">${summary.discrepancyCount || 0}</strong>
+                </div>
+                <div class="p-2 bg-slate-900 rounded-xl border border-slate-800 text-center">
+                    <span class="text-slate-500 block text-[9px] uppercase font-bold">Rationale Mismatches</span>
+                    <strong class="${(summary.rationaleOptionMappingErrorCount || summary.rationaleContradictionCount) > 0 ? 'text-red-400 font-bold' : 'text-slate-300'}">${summary.rationaleOptionMappingErrorCount || summary.rationaleContradictionCount || 0}</strong>
+                </div>
+                <div class="p-2 bg-slate-900 rounded-xl border border-slate-800 text-center">
+                    <span class="text-slate-500 block text-[9px] uppercase font-bold">Weak Distractors</span>
+                    <strong class="${summary.weakDistractorCount > 0 ? 'text-yellow-400 font-bold' : 'text-slate-300'}">${summary.weakDistractorCount || 0}</strong>
+                </div>
+                <div class="p-2 bg-slate-900 rounded-xl border border-slate-800 text-center">
+                    <span class="text-slate-500 block text-[9px] uppercase font-bold">Answer Leakage</span>
+                    <strong class="${summary.answerLeakageCount > 0 ? 'text-red-400 font-bold' : 'text-slate-300'}">${summary.answerLeakageCount || 0}</strong>
+                </div>
+                <div class="p-2 bg-slate-900 rounded-xl border border-slate-800 text-center">
+                    <span class="text-slate-500 block text-[9px] uppercase font-bold">Cognitive Mismatches</span>
+                    <strong class="${summary.cognitiveMismatchCount > 0 ? 'text-yellow-400 font-bold' : 'text-slate-300'}">${summary.cognitiveMismatchCount || 0}</strong>
                 </div>
             </div>
 

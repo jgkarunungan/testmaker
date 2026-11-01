@@ -306,7 +306,7 @@ const AppLogic = {
 
         if (!q || typeof q !== 'object') return warnings;
 
-        // 1. Option Structure & Weak Distractor Checks
+        // 1. Option Structure & Weak/Absurd/Extreme Distractor Checks
         if (Array.isArray(q.options) && q.options.length === 4) {
             const strippedOpts = q.options.map(o => (typeof o === 'string' ? o.toLowerCase().replace(/[^\w]/g, '') : ''));
             const strippedSet = new Set(strippedOpts);
@@ -326,6 +326,35 @@ const AppLogic = {
                 warnings.push("Contains 'All/None of the above' style phrase; review distractor quality.");
             }
 
+            // Check for absurd or joke distractors in options
+            const absurdDistractor = q.options.some((o, idx) => {
+                if (idx === q.answer_index || typeof o !== 'string') return false;
+                const lower = o.toLowerCase();
+                return lower.includes('relies on luck') ||
+                       lower.includes('learning philosophy is boring') ||
+                       lower.includes('mathematical equation') ||
+                       lower.includes('makes the listener angry') ||
+                       lower.includes('secret that only ancient philosophers possessed') ||
+                       lower.includes('plan both fail');
+            });
+            if (absurdDistractor) {
+                warnings.push("Weak or absurd distractor detected; option is easily eliminated without learning.");
+            }
+
+            // Check for extreme absolutes in distractors
+            const extremeAbsolutes = q.options.some((o, idx) => {
+                if (idx === q.answer_index || typeof o !== 'string') return false;
+                const lower = o.toLowerCase();
+                return lower.includes('impossible in any') ||
+                       lower.includes('everyone knows it') ||
+                       lower.includes('written in books') ||
+                       lower.includes('all art schools') ||
+                       /\b(always|never|solely|entirely)\b/i.test(lower);
+            });
+            if (extremeAbsolutes) {
+                warnings.push("Distractor contains extreme absolutes (e.g. 'always', 'never', 'impossible in any'), making it overly easy to eliminate.");
+            }
+
             // Option Length Clue Detection
             if (Number.isInteger(q.answer_index) && q.answer_index >= 0 && q.answer_index < 4) {
                 const lengths = q.options.map(o => (typeof o === 'string' ? o.trim().length : 0));
@@ -339,18 +368,27 @@ const AppLogic = {
             }
         }
 
-        // 2. Short question stem check (possible missing stimulus)
+        // 2. Short question stem check & Answer Leakage Detection
         if (typeof q.question === 'string') {
             const stemTrimmed = q.question.trim();
             if (stemTrimmed.length < 25) {
                 warnings.push("Short question stem (possible missing contextual stimulus).");
             }
 
-            // Answer Leakage Detection (Check if stem directly states the correct option text verbatim)
+            // Answer Leakage Detection (Check if stem directly states or explicitly names target concept/answer)
             if (Array.isArray(q.options) && Number.isInteger(q.answer_index) && q.answer_index >= 0 && q.answer_index < 4) {
                 const correctText = (q.options[q.answer_index] || '').trim();
-                if (correctText.length > 15 && stemTrimmed.toLowerCase().includes(correctText.toLowerCase())) {
-                    warnings.push("Possible answer leakage: Question stem appears to directly contain the correct answer text.");
+                const lowerStem = stemTrimmed.toLowerCase();
+                const lowerCorrect = correctText.toLowerCase();
+
+                // 1. Verbatim Option Substring Leakage (>20 characters matching verbatim)
+                if (correctText.length > 20 && lowerStem.includes(lowerCorrect)) {
+                    warnings.push("Answer leakage: Question stem directly contains the correct answer text verbatim.");
+                }
+
+                // 2. Explicit Term Definition Leakage (e.g., stem asking "What is X?" where correct option IS "X")
+                if (lowerCorrect.length > 5 && (lowerStem.includes(`what is ${lowerCorrect}`) || lowerStem.includes(`which refers to ${lowerCorrect}`) || lowerStem.includes(`is defined as ${lowerCorrect}`) || lowerStem.includes(`ethics of ${lowerCorrect}`))) {
+                    warnings.push("Answer leakage: Question stem explicitly names target term being defined.");
                 }
             }
 
@@ -358,7 +396,7 @@ const AppLogic = {
             const cogLevel = (q.cognitive_level || '').trim();
             if (cogLevel === 'Analyzing' || cogLevel === 'Evaluating') {
                 const lower = stemTrimmed.toLowerCase();
-                const isSimpleRecall = /^(ano ang|sino ang|kailan|tukuyin|identify|what is|who was|when did|define)\b/i.test(lower);
+                const isSimpleRecall = /^(ano ang|sino ang|kailan|tukuyin|identify|what is|who was|when did|define|which term|which word|which phrase|which concept)\b/i.test(lower);
                 const hasContextualKeyword = /sitwasyon|halimbawa|scenario|suriin|paano|bakit|compare|analyze|evaluate|dataset|evidence/i.test(lower);
 
                 if (isSimpleRecall && !hasContextualKeyword) {

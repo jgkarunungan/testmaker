@@ -253,22 +253,43 @@ const AppLogic = {
     },
 
     /**
-     * Validates a single question item against assessment schema constraints.
-     * @param {Object} q Question item object
-     * @returns {Object} { isValid: boolean, error?: string }
+     * Gets the stem text of a question item, supporting both structured (q.stem) and legacy (q.question) items.
      */
+    getItemStem(q) {
+        if (!q || typeof q !== 'object') return '';
+        if (typeof q.stem === 'string' && q.stem.trim().length > 0) return q.stem.trim();
+        if (typeof q.question === 'string' && q.question.trim().length > 0) return q.question.trim();
+        return '';
+    },
+
+    /**
+     * Gets the stimulus text of a question item, if present.
+     */
+    getItemStimulus(q) {
+        if (!q || typeof q !== 'object') return '';
+        if (typeof q.stimulus === 'string' && q.stimulus.trim().length > 0) return q.stimulus.trim();
+        return '';
+    },
+
     /**
      * Validates a single question item against deterministic schema constraints.
-     * @param {Object} q Question item object
-     * @returns {Object} { isValid: boolean, error?: string }
+     * Supports both canonical three-part items (stimulus, stem, options) and legacy items.
      */
     validateQuestion(q) {
         if (!q || typeof q !== 'object') {
             return { isValid: false, error: 'Question is not a valid object.' };
         }
-        if (typeof q.question !== 'string' || q.question.trim() === '') {
+
+        const stemText = this.getItemStem(q);
+        if (!stemText) {
             return { isValid: false, error: 'Question stem is missing or empty.' };
         }
+
+        // Structured items containing stimulus must have a nonempty stimulus string
+        if (q.stimulus !== undefined && (typeof q.stimulus !== 'string' || q.stimulus.trim() === '')) {
+            return { isValid: false, error: 'Question stimulus is empty or not a string.' };
+        }
+
         if (!Array.isArray(q.options) || q.options.length !== 4) {
             return { isValid: false, error: `Expected exactly 4 options, found ${Array.isArray(q.options) ? q.options.length : 0}.` };
         }

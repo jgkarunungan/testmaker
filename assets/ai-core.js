@@ -479,8 +479,10 @@ ${JSON.stringify(systemPrompt, null, 2)}
    Avoid creating scenarios or question stems similar to these previously accepted items:
    ${previousSummaryText}
 
-4. MANDATORY DISTRACTOR MISCONCEPTION ENGINEERING & CONCISE STEMS:
-   - CONCISE STEMS: Question stems must be direct, clear, and concise (1-2 sentences, ~100-150 characters). Avoid long-winded introductory paragraphs or unnecessary background fluff on LOTS items.
+4. MANDATORY THREE-PART STRUCTURE & DISTRACTOR MISCONCEPTION ENGINEERING:
+   - CANONICAL THREE-PART ITEM STRUCTURE: Every question MUST have separate "stimulus" and "stem" fields.
+     * "stimulus": A real-world scenario, short case study, media situation, or source description relevant to the competency (~100-250 characters).
+     * "stem": The specific direct question or task that students must answer based on the stimulus (1-2 sentences, ~80-150 characters). Do NOT repeat the stimulus in the stem.
    - Construct exactly 3 distractors for each question from realistic, subject-specific student misconceptions:
      * Confusing two related taught concepts.
      * Reversing cause and effect relationships.
@@ -497,7 +499,8 @@ ${JSON.stringify(systemPrompt, null, 2)}
      "questions": [
        {
          "slot_id": "Slot ID from target slots above",
-         "question": "Educational stimulus followed by clear question stem...",
+         "stimulus": "Educational situation, case scenario, media excerpt, or communication context...",
+         "stem": "Direct specific question or task for students based on the stimulus...",
          "options": [
            "Option choice 1",
            "Option choice 2",

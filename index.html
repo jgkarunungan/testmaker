@@ -3277,8 +3277,17 @@
                     const card = document.createElement('div');
                     card.className = 'bg-slate-900/40 border border-slate-800 p-6 rounded-2xl mb-4 relative group';
                     card.innerHTML = `
+                        ${q.stimulus ? `
+                            <div class="mb-3 p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl text-xs text-indigo-200">
+                                <strong class="text-[10px] text-indigo-400 uppercase font-bold block mb-1">STIMULUS</strong>
+                                ${q.stimulus}
+                            </div>
+                        ` : ''}
                         <div class="flex justify-between items-start mb-4">
-                            <p class="text-white font-medium flex-1" data-res-idx="${resIdx}" data-q-idx="${qIdx}" data-field="question"><span class="text-slate-500 mr-2">Q${globalCounter++}.</span> ${q.question}</p>
+                            <p class="text-white font-medium flex-1" data-res-idx="${resIdx}" data-q-idx="${qIdx}" data-field="question">
+                                <span class="text-slate-500 mr-2">Q${globalCounter++}.</span>
+                                ${q.stem || q.question}
+                            </p>
                             ${q.cognitive_level ? `
                                 <span class="px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[9px] font-bold uppercase border border-indigo-500/20">
                                     ${q.cognitive_level}
@@ -4663,14 +4672,22 @@
                 results.forEach(res => {
                     const qs = getQuestionsArray(res);
                     qs.forEach(q => {
+                        const stim = (typeof AppLogic !== 'undefined' && typeof AppLogic.getItemStimulus === 'function') ? AppLogic.getItemStimulus(q) : (q.stimulus || '');
+                        const stem = (typeof AppLogic !== 'undefined' && typeof AppLogic.getItemStem === 'function') ? AppLogic.getItemStem(q) : (q.stem || q.question || '');
                         const opts = q.options || [];
                         const maxOptLen = Math.max(...opts.map(o => (typeof o === 'string' ? o.length : 0)));
                         const gridColsStyle = maxOptLen > 50 ? 'grid-template-columns: 1fr;' : 'grid-template-columns: 1fr 1fr;';
 
                         paper += `
                             <div class="print-card" style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px;">
+                                ${stim ? `
+                                    <div style="font-size: 11px; background-color: #f1f5f9; padding: 6px 10px; border-left: 3px solid #475569; border-radius: 4px; margin-bottom: 6px; color: #1e293b;">
+                                        <strong style="font-size: 9px; text-transform: uppercase; color: #475569; display: block; margin-bottom: 2px;">STIMULUS / CONTEXT</strong>
+                                        ${escapeHtml(stim)}
+                                    </div>
+                                ` : ''}
                                 <p style="font-size: 13px; font-weight: bold; margin: 0 0 8px 0; color: #000;">
-                                    ${globalCounter++}. ${escapeHtml(q.question)}
+                                    ${globalCounter++}. ${escapeHtml(stem)}
                                 </p>
                                 <div style="display: grid; ${gridColsStyle} gap: 6px; margin-left: 12px;">
                                     ${opts.map((opt, i) => `

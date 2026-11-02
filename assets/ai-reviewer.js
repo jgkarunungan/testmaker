@@ -475,10 +475,13 @@ Return ONLY a valid JSON object matching this schema (NO MARKDOWN, NO COMMENTS):
 ITEMS TO REVIEW:
 ${JSON.stringify((itemsBatch || []).map(i => {
     const q = i.acceptedQuestion || i;
+    const stim = (typeof AppLogic !== 'undefined' && typeof AppLogic.getItemStimulus === 'function') ? AppLogic.getItemStimulus(q) : (q.stimulus || '');
+    const stem = (typeof AppLogic !== 'undefined' && typeof AppLogic.getItemStem === 'function') ? AppLogic.getItemStem(q) : (q.stem || q.question || '');
     return {
         item_id: i.slotId || i.itemId || i.item_id,
         competency: i.competencyTitle || i.competency,
-        question_text: q.question || q.questionStem || q.question_text,
+        stimulus: stim || "[No explicit stimulus context provided]",
+        stem: stem,
         options: q.options || i.options || []
     };
 }), null, 2)}
@@ -492,9 +495,12 @@ ${JSON.stringify((itemsBatch || []).map(i => {
         const stageBBatch = itemsBatch.map(i => {
             const q = i.acceptedQuestion || i;
             const stA = stageAResults.find(r => r.item_id === (i.slotId || i.itemId)) || {};
+            const stim = (typeof AppLogic !== 'undefined' && typeof AppLogic.getItemStimulus === 'function') ? AppLogic.getItemStimulus(q) : (q.stimulus || '');
+            const stem = (typeof AppLogic !== 'undefined' && typeof AppLogic.getItemStem === 'function') ? AppLogic.getItemStem(q) : (q.stem || q.question || '');
             return {
                 item_id: i.slotId || i.itemId,
-                question_text: q.question || q.questionStem,
+                stimulus: stim,
+                stem: stem,
                 options: q.options,
                 original_answer_index: q.answer_index !== undefined ? q.answer_index : q.originalAnswerIndex,
                 original_rationale: q.rationale || q.originalRationale,
@@ -1117,7 +1123,14 @@ ${JSON.stringify(stageBBatch, null, 2)}
                             </div>
                         </div>
 
-                        <p class="text-xs text-slate-300 italic mb-3 bg-slate-900/50 p-2.5 rounded-xl border border-slate-800">
+                        ${item.stimulus ? `
+                            <div class="text-xs text-indigo-300 bg-indigo-950/40 p-2.5 rounded-xl border border-indigo-500/30 mb-2">
+                                <strong class="text-[10px] text-indigo-400 uppercase font-bold block mb-0.5">STIMULUS</strong>
+                                "${item.stimulus}"
+                            </div>
+                        ` : ''}
+                        <p class="text-xs text-slate-200 font-medium mb-3 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                            <strong class="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">QUESTION STEM</strong>
                             "${item.questionStem}"
                         </p>
 

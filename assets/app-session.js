@@ -198,11 +198,28 @@ const AppSession = {
     validateGeneratedSlot(slot, question) {
         if (!slot || !question) return { isValid: false, error: "Missing slot or question data." };
 
-        // 1. Schema Validation via AppLogic.validateQuestion
+        // 1. Strict Structural Enforcement for New Generated Questions
+        if (!question.stimulus && !question.question) {
+            return { isValid: false, error: "New generated item is missing required separate stimulus property." };
+        }
+        if (question.stimulus !== undefined && (typeof question.stimulus !== 'string' || question.stimulus.trim() === '')) {
+            return { isValid: false, error: "New generated item is missing required separate stimulus property." };
+        }
+
+        // Auto-attach stem if question field present
+        if (!question.stem && question.question) {
+            question.stem = question.question;
+        }
+
+        if (!question.stem || typeof question.stem !== 'string' || question.stem.trim() === '') {
+            return { isValid: false, error: "New generated item is missing required separate stem property." };
+        }
+
+        // Schema Validation via AppLogic.validateQuestion
         const schemaVal = AppLogic.validateQuestion(question);
         if (!schemaVal.isValid) return schemaVal;
 
-        // 2. Duplicate Normalized Option Check
+        // Duplicate Normalized Option Check
         const normalizedOpts = question.options.map(o => (typeof o === 'string' ? o.trim().toLowerCase().replace(/[^\w]/g, '') : ''));
         if (new Set(normalizedOpts).size < 4) {
             return { isValid: false, error: "Duplicate or near-identical option choices detected in item." };
@@ -213,6 +230,11 @@ const AppSession = {
         question.competencyTitle = slot.competencyTitle;
         question.plannedBloomLevel = slot.plannedBloomLevel;
         question.slotId = slot.slotId;
+
+        // Ensure stem field is populated
+        if (!question.stem && question.question) {
+            question.stem = question.question;
+        }
 
         // Ensure stable option IDs
         if (!Array.isArray(question.option_ids) || question.option_ids.length !== 4) {

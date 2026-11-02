@@ -473,24 +473,38 @@ const AppLogic = {
         // Randomize the sequence of target positions across the assessment questions
         AppLogic.fisherYatesShuffle(targetPool);
 
-        // 3. Rearrange options for each valid question using original index tracking
+        // 3. Rearrange options for each valid question using original index tracking and stable option IDs
         validQuestionList.forEach((q, k) => {
             const targetIndex = targetPool[k];
+
+            // Ensure stable option IDs array exists
+            if (!Array.isArray(q.option_ids) || q.option_ids.length !== 4) {
+                q.option_ids = ['opt_0', 'opt_1', 'opt_2', 'opt_3'];
+            }
+
             const origAnswerIdx = q.answer_index;
             const originalCorrectOption = q.options[origAnswerIdx];
+            const originalCorrectOptionId = q.option_ids[origAnswerIdx];
 
-            // Extract distractors by original array position to prevent string duplicate issues
-            const distractors = q.options.filter((_, idx) => idx !== origAnswerIdx);
+            // Extract distractors and distractor IDs
+            const distractorPairs = q.options
+                .map((text, idx) => ({ text, id: q.option_ids[idx] }))
+                .filter((_, idx) => idx !== origAnswerIdx);
 
-            // Shuffle the 3 distractors
-            AppLogic.fisherYatesShuffle(distractors);
+            // Shuffle distractors
+            AppLogic.fisherYatesShuffle(distractorPairs);
 
-            // Reconstruct options array placing correct answer at targetIndex
-            const newOptions = [...distractors];
-            newOptions.splice(targetIndex, 0, originalCorrectOption);
+            // Reconstruct options array and option_ids array placing correct choice at targetIndex
+            const newOptionPairs = [...distractorPairs];
+            newOptionPairs.splice(targetIndex, 0, { text: originalCorrectOption, id: originalCorrectOptionId });
 
-            q.options = newOptions;
+            q.options = newOptionPairs.map(p => p.text);
+            q.option_ids = newOptionPairs.map(p => p.id);
             q.answer_index = targetIndex;
+
+            if (q.rationale_details) {
+                q.rationale_details.correct_option_id = originalCorrectOptionId;
+            }
         });
 
         return results;

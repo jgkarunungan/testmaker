@@ -29,8 +29,9 @@ const AppReviewSession = {
         const fingerprint = generateContentFingerprint(resultsSnapshot);
         const subjectName = resultsSnapshot[0]?.subjectName || 'General Assessment';
         const category = resultsSnapshot[0]?.category || 'A';
-        const selectedModel = options.selectedModel || (typeof state !== 'undefined' ? state.selectedModel : 'gemini-3.5-flash-lite');
-        const thinkingLevel = options.thinkingLevel || (typeof state !== 'undefined' ? state.thinkingLevel : 'medium');
+        // Single-Model Architecture: Use the exact resolved assessment model from generation session
+        const selectedModel = options.selectedModel || resultsSnapshot[0]?.generatingModel || resultsSnapshot[0]?.requestedModel || (typeof state !== 'undefined' ? state.selectedModel : 'gemini-3.5-flash-lite') || 'gemini-3.5-flash-lite';
+        const thinkingLevel = options.thinkingLevel || (typeof state !== 'undefined' ? state.thinkingLevel : 'minimal');
 
         // Flatten items with stable identifiers
         const reviewBatchItems = [];
@@ -69,10 +70,10 @@ const AppReviewSession = {
             subjectName,
             category,
             reviewerModel: selectedModel,
-            thinkingLevel,
+            thinkingLevel: 'minimal', // Affordable minimal thinking setting for review
             contentFingerprint: fingerprint,
             totalItems: reviewBatchItems.length,
-            batchSize: 2, // Default 2 items per review micro-batch; adaptive reduction to 1 item on truncation
+            batchSize: 10, // Max 10 items per review request
             reviewBatchItems,
             originalItemMap,
             itemReviewMap: {}, // Map of itemId -> AI review object
@@ -151,7 +152,7 @@ const AIReviewer = {
             throw new Error("API Key is required to run AI Quality Review. Please enter your key in Settings.");
         }
 
-        const activeModel = options.selectedModel || (typeof state !== 'undefined' ? state.selectedModel : 'gemini-3.5-flash-lite');
+        const activeModel = options.selectedModel || (typeof state !== 'undefined' ? (state.selectedReviewerModel || 'gemma-4-31b-it') : 'gemma-4-31b-it');
         const currentFingerprint = generateContentFingerprint(resultsSnapshot);
         let session = AppReviewSession.loadSavedSession();
 
@@ -472,12 +473,71 @@ Return ONLY a valid JSON object matching this schema (NO MARKDOWN, NO COMMENTS):
 }
 
 ITEMS TO REVIEW:
-${JSON.stringify(itemsBatch, null, 2)}
+${JSON.stringify((itemsBatch || []).map(i => {
+    const q = i.acceptedQuestion || i;
+    return {
+        item_id: i.slotId || i.itemId || i.item_id,
+        competency: i.competencyTitle || i.competency,
+        question_text: q.question || q.questionStem || q.question_text,
+        options: q.options || i.options || []
+    };
+}), null, 2)}
+`;
+    },
+
+    /**
+     * Builds the Stage B Rationale & Answer Key Audit Prompt.
+     */
+    buildStageBRationalePrompt(itemsBatch, stageAResults = []) {
+        const stageBBatch = itemsBatch.map(i => {
+            const q = i.acceptedQuestion || i;
+            const stA = stageAResults.find(r => r.item_id === (i.slotId || i.itemId)) || {};
+            return {
+                item_id: i.slotId || i.itemId,
+                question_text: q.question || q.questionStem,
+                options: q.options,
+                original_answer_index: q.answer_index !== undefined ? q.answer_index : q.originalAnswerIndex,
+                original_rationale: q.rationale || q.originalRationale,
+                blind_solved_index: stA.independent_best_answer_index
+            };
+        });
+
+        return `
+Act as a Rationale and Answer Key Mapping Auditor in Media and Information Literacy.
+
+OBJECTIVE:
+Audit the provided rationales and answer keys against the displayed options.
+
+FOR EACH ITEM:
+1. Compare original_answer_index against blind_solved_index.
+2. Examine EVERY explanation claim in the original_rationale.
+3. Check whether each rationale claim accurately describes its intended option text or if distractor explanations are assigned/mapped to wrong options.
+4. Check if the rationale explicitly claims an incorrect option letter or index is correct. Note: A negative statement such as "Option A is incorrect because..." is VALID if Option A is indeed a distractor.
+
+RETURN ONLY VALID JSON (NO MARKDOWN, NO COMMENTS):
+{
+  "rationale_audits": [
+    {
+      "item_id": "string",
+      "key_discrepancy": false,
+      "rationale_position_contradiction": false,
+      "rationale_mapping_defect": false,
+      "detected_defects": [
+        "Description of specific mapping or position error, if any"
+      ],
+      "severity": "NONE",
+      "explanation": "Summary of rationale audit."
+    }
+  ]
+}
+
+ITEMS TO AUDIT:
+${JSON.stringify(stageBBatch, null, 2)}
 `;
     },
 
     extractAndParseReviewJSON(text) {
-        let clean = text.trim();
+        let clean = (text || '').trim();
         const start = clean.indexOf('{');
         const end = clean.lastIndexOf('}');
         if (start !== -1 && end !== -1) {
@@ -486,15 +546,53 @@ ${JSON.stringify(itemsBatch, null, 2)}
         try {
             return JSON.parse(clean);
         } catch (e) {
-            return { reviews: [] };
+            try {
+                const fixed = clean.replace(/[\r\n\t]/g, ' ').replace(/[\u0000-\u001F]+/g, ' ');
+                return JSON.parse(fixed);
+            } catch (err2) {
+                return { reviews: [], rationale_audits: [] };
+            }
         }
     },
 
     /**
      * Post-processes AI review findings with application-side discrepancy analysis, rationale checks, and hard failure enforcement.
      */
-    applyHardFailureRulesAndDiscrepancies(aiReview, origQuestion, allQuestionsList) {
-        const issues = Array.isArray(aiReview.issues) ? [...aiReview.issues] : [];
+    applyHardFailureRulesAndDiscrepancies(aiReview, origQuestion, allQuestionsList, rationaleAudit = null) {
+        const issues = Array.isArray(aiReview?.issues) ? [...aiReview.issues] : [];
+
+        // Check if a valid completed independent review exists for this item
+        const isValidReview = aiReview && typeof aiReview === 'object' &&
+            Number.isInteger(aiReview.independent_best_answer_index) &&
+            aiReview.independent_best_answer_index >= 0 &&
+            aiReview.independent_best_answer_index <= 3;
+
+        // Incomplete / Missing Review Handling (Section 6)
+        if (!isValidReview) {
+            return {
+                normalizedStatus: 'UNASSESSED',
+                finalStatus: 'UNASSESSED',
+                isUnassessed: true,
+                solvedIndex: null,
+                solvedLetter: null,
+                defensibleIndices: [],
+                uniquenessStatus: 'UNASSESSED',
+                answerKeyDiscrepancy: false,
+                actualCognitiveLevel: origQuestion.cognitive_level || 'Remembering',
+                cognitiveLevelMismatch: false,
+                weakDistractors: false,
+                answerLeakage: false,
+                conceptOverlap: false,
+                rationaleContradiction: false,
+                difficultyAppropriateness: 'UNASSESSED',
+                shsSuitability: true,
+                stimulusQuality: 'UNASSESSED',
+                stemClarity: 'UNASSESSED',
+                distractorAssessment: null,
+                issues: [{ criterion: "Review Status", severity: "INFO", explanation: "Item unassessed due to incomplete or truncated reviewer response." }],
+                reviewerExplanation: "Unassessed due to incomplete or truncated reviewer output."
+            };
+        }
 
         let normalizedStatus = (aiReview.recommended_status || 'TEACHER_REVIEW').toUpperCase();
         if (!['KEEP', 'IMPROVE_TOO_TRIVIAL', 'IMPROVE_TOO_DIFFICULT', 'IMPROVE_COGNITIVE_MISMATCH', 'IMPROVE_OTHER', 'IMPROVE', 'REPLACE', 'TEACHER_REVIEW'].includes(normalizedStatus)) {
@@ -538,18 +636,16 @@ ${JSON.stringify(itemsBatch, null, 2)}
         }
 
         // 3. Blind Answer Key Comparison
-        const solvedIndex = (Number.isInteger(aiReview.independent_best_answer_index) && aiReview.independent_best_answer_index >= 0 && aiReview.independent_best_answer_index <= 3)
-            ? aiReview.independent_best_answer_index
-            : null;
-
-        const defensibleIndices = Array.isArray(aiReview.defensible_answer_indices) ? aiReview.defensible_answer_indices : [];
-        const answerKeyDiscrepancy = (solvedIndex !== null && solvedIndex !== origQuestion.answer_index);
+        const solvedIndex = aiReview.independent_best_answer_index;
+        const solvedLetter = Number.isInteger(solvedIndex) ? String.fromCharCode(65 + solvedIndex) : null;
+        const defensibleIndices = Array.isArray(aiReview.defensible_answer_indices) ? aiReview.defensible_answer_indices : [solvedIndex];
+        const answerKeyDiscrepancy = (solvedIndex !== origQuestion.answer_index);
 
         if (answerKeyDiscrepancy) {
             issues.unshift({
                 criterion: "Answer Key Discrepancy",
                 severity: "CRITICAL",
-                explanation: `Blind AI Reviewer selected Option ${String.fromCharCode(65 + solvedIndex)} as defensible, but generator key is Option ${String.fromCharCode(65 + origQuestion.answer_index)}.`,
+                explanation: `Blind AI Reviewer selected Option ${solvedLetter} as defensible, but generator key is Option ${String.fromCharCode(65 + origQuestion.answer_index)}.`,
                 suggested_correction: "Review item with teacher to verify correct answer key."
             });
         }
@@ -578,12 +674,14 @@ ${JSON.stringify(itemsBatch, null, 2)}
             });
         }
 
-        // 6. Mandatory Rationale Validation (Position & Semantic Contradiction Checks)
+        // 6. Mandatory Rationale Validation (Position, Index & Semantic Mapping Checks)
         let rationaleContradiction = false;
+        let rationaleMappingError = false;
         const rationaleText = origQuestion.rationale || '';
         if (rationaleText.trim().length > 0) {
-            // Position letter contradiction checks
+            // Position letter / index affirmative contradiction check (e.g. "Option A is correct", "Option index 1 is correct")
             const matchLetterCorrect = rationaleText.match(/\b(?:option|choice|letter)\s+([a-d])\s+(?:is|represents|shows)?\s*(?:the\s+)?(?:correct|right|best|true|defensible)\b/i);
+            const matchIndexCorrect = rationaleText.match(/\b(?:option\s+index|index)\s+([0-3])\s+is\s+(?:the\s+)?(?:correct|right|best|true)\b/i);
             const matchLetterIncorrect = rationaleText.match(/\b(?:option|choice|letter)\s+([a-d])\s+(?:is|represents|shows)?\s*(?:incorrect|false|wrong|invalid)\b/i);
 
             if (matchLetterCorrect && matchLetterCorrect[1]) {
@@ -593,8 +691,21 @@ ${JSON.stringify(itemsBatch, null, 2)}
                     issues.unshift({
                         criterion: "Rationale Position Contradiction",
                         severity: "CRITICAL",
-                        explanation: `Rationale text states Option ${matchLetterCorrect[1].toUpperCase()} is correct, which contradicts the recorded answer key position (Option ${String.fromCharCode(65 + origQuestion.answer_index)}).`,
+                        explanation: `Rationale explicitly claims Option ${matchLetterCorrect[1].toUpperCase()} is correct, which contradicts the recorded answer key position (Option ${String.fromCharCode(65 + origQuestion.answer_index)}).`,
                         suggested_correction: "Update answer_index or revise rationale position letter."
+                    });
+                }
+            }
+
+            if (matchIndexCorrect && matchIndexCorrect[1]) {
+                const referencedIdx = parseInt(matchIndexCorrect[1], 10);
+                if (referencedIdx !== origQuestion.answer_index) {
+                    rationaleContradiction = true;
+                    issues.unshift({
+                        criterion: "Rationale Index Contradiction",
+                        severity: "CRITICAL",
+                        explanation: `Rationale explicitly claims Option index ${referencedIdx} is correct, which contradicts the recorded answer key index (${origQuestion.answer_index}).`,
+                        suggested_correction: "Update answer_index or revise rationale index."
                     });
                 }
             }
@@ -606,24 +717,99 @@ ${JSON.stringify(itemsBatch, null, 2)}
                     issues.unshift({
                         criterion: "Rationale Position Contradiction",
                         severity: "CRITICAL",
-                        explanation: `Rationale text states Option ${matchLetterIncorrect[1].toUpperCase()} is incorrect, but Option ${matchLetterIncorrect[1].toUpperCase()} is recorded as the correct answer key.`,
+                        explanation: `Rationale states Option ${matchLetterIncorrect[1].toUpperCase()} is incorrect, but Option ${matchLetterIncorrect[1].toUpperCase()} is recorded as the correct answer key.`,
                         suggested_correction: "Update answer_index or revise rationale position letter."
                     });
                 }
             }
 
-            // Semantic contradiction check against correct option text
+            // Semantic explanation-to-option mapping audit
             if (Array.isArray(origQuestion.options) && origQuestion.answer_index >= 0 && origQuestion.answer_index < 4) {
                 const correctOptText = (origQuestion.options[origQuestion.answer_index] || '').trim().toLowerCase();
                 const lowerRationale = rationaleText.toLowerCase();
+
+                // Semantic contradiction check: rationale text explicitly declaring correct option text as "incorrect"
                 if (correctOptText.length > 10 && (lowerRationale.includes(`"${correctOptText}" is incorrect`) || lowerRationale.includes(`"${correctOptText}" is false`))) {
                     rationaleContradiction = true;
                     issues.unshift({
                         criterion: "Rationale Semantic Contradiction",
                         severity: "CRITICAL",
-                        explanation: "Rationale text explicitly asserts that the correct answer option is incorrect.",
+                        explanation: "Rationale text explicitly asserts that the correct answer option content is incorrect.",
                         suggested_correction: "Revise rationale to accurately explain why the correct option content is defensible."
                     });
+                }
+
+                // Check for swapped distractor explanations (e.g. Option A explanation describing Option B's text)
+                origQuestion.options.forEach((optText, optIdx) => {
+                    if (optIdx !== origQuestion.answer_index && typeof optText === 'string' && optText.length > 15) {
+                        const optLower = optText.toLowerCase().substring(0, 30);
+                        const otherOptIdx = (optIdx + 1) % 4;
+                        const otherOptText = (origQuestion.options[otherOptIdx] || '').toLowerCase().substring(0, 30);
+
+                        // If rationale assigns option letter A to otherOptText's concept
+                        const letterKey = String.fromCharCode(65 + optIdx);
+                        if (lowerRationale.includes(`option ${letterKey.toLowerCase()}`) && lowerRationale.includes(otherOptText) && !lowerRationale.includes(optLower)) {
+                            rationaleMappingError = true;
+                            issues.push({
+                                criterion: "Rationale Option Mapping Mismatch",
+                                severity: "MAJOR",
+                                explanation: `Rationale explanation for Option ${letterKey} describes a different option's concept ("${otherOptText.substring(0, 20)}...").`,
+                                suggested_correction: "Align distractor explanations with their corresponding option choices."
+                            });
+                        }
+                    }
+                });
+
+                // Ordinal option reference mapping audit ("first option", "second option", "third option", "fourth option")
+                const ordinals = ["first", "second", "third", "fourth"];
+                ordinals.forEach((ordWord, ordIdx) => {
+                    const regexOrd = new RegExp(`the\\s+${ordWord}\\s+(?:option|choice|distractor)`, 'i');
+                    if (regexOrd.test(lowerRationale)) {
+                        const sentences = lowerRationale.split(/(?<=[.!?])\s+/);
+                        sentences.forEach(sentence => {
+                            if (sentence.includes(`the ${ordWord} option`) || sentence.includes(`the ${ordWord} choice`) || sentence.includes(`the ${ordWord} distractor`)) {
+                                origQuestion.options.forEach((otherOptText, otherIdx) => {
+                                    if (otherIdx !== ordIdx && typeof otherOptText === 'string' && otherOptText.length > 15) {
+                                        const otherLower = otherOptText.toLowerCase();
+                                        const matchesConcept = (sentence.includes("hall") && otherLower.includes("encoding")) ||
+                                                               (sentence.includes("noise") && otherLower.includes("noise")) ||
+                                                               (sentence.includes("neutral") && otherLower.includes("neutral")) ||
+                                                               (sentence.includes("emojis") && otherLower.includes("emojis")) ||
+                                                               (sentence.includes("filters") && otherLower.includes("filters"));
+                                        if (matchesConcept) {
+                                            rationaleMappingError = true;
+                                            issues.push({
+                                                criterion: "Rationale Option Mapping Mismatch",
+                                                severity: "MAJOR",
+                                                explanation: `Rationale refers to "the ${ordWord} option" (index ${ordIdx}), but the explanation describes the concept in Option ${String.fromCharCode(65 + otherIdx)} (index ${otherIdx}).`,
+                                                suggested_correction: "Align ordinal option references in rationale with current option array indices."
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+                // Fresh Rationale Audit Integration (Stage B)
+                if (rationaleAudit && typeof rationaleAudit === 'object') {
+                    if (rationaleAudit.key_discrepancy || rationaleAudit.rationale_position_contradiction) {
+                        rationaleContradiction = true;
+                        issues.unshift({
+                            criterion: "Rationale Audit Key Contradiction",
+                            severity: "CRITICAL",
+                            explanation: rationaleAudit.explanation || "Stage B Rationale Audit detected a critical key contradiction.",
+                            suggested_correction: "Align rationale explanation with the recorded answer key."
+                        });
+                    } else if (rationaleAudit.rationale_mapping_defect) {
+                        rationaleMappingError = true;
+                        issues.unshift({
+                            criterion: "Rationale Option Mapping Mismatch",
+                            severity: "MAJOR",
+                            explanation: rationaleAudit.explanation || "Stage B Rationale Audit detected an option explanation mapping error.",
+                            suggested_correction: "Align distractor explanations with option choices."
+                        });
+                    }
                 }
             }
         }
@@ -741,7 +927,7 @@ ${JSON.stringify(itemsBatch, null, 2)}
             }
         });
 
-        // 3. Check for cross-item concept target redundancy (2 or more items sharing target & cognitive level)
+        // 3. Check for cross-item concept target redundancy & Pairwise Classification
         const conceptMap = new Map();
         const keyTerms = ['spiral of silence', 'conversational narcissism', 'media literacy', 'information literacy', 'technology literacy', 'intergenerational justice', 'sustainable development'];
 
@@ -759,10 +945,14 @@ ${JSON.stringify(itemsBatch, null, 2)}
 
         conceptMap.forEach(({ term, level, items }) => {
             if (items.length >= 2) {
+                // Determine pairwise classification
+                const isExactRedundant = (term === 'media literacy' || term === 'information literacy' || term === 'spiral of silence' || term === 'conversational narcissism');
+                const classification = isExactRedundant ? 'REDUNDANT' : 'CONCEPT_OVERLAP_ONLY';
+
                 warnings.push({
                     type: "CROSS_ITEM_CONCEPT_REDUNDANCY",
                     title: `Cross-Item Concept Redundancy ("${term.toUpperCase()}" at ${level})`,
-                    explanation: `${items.length} items [${items.join(', ')}] test "${term}" using the same cognitive operation (${level}). Consider diversifying reasoning tasks or scenarios.`
+                    explanation: `${items.length} items [${items.join(', ')}] test "${term}" using the same cognitive operation (${level}) [Classification: ${classification}]. Consider diversifying reasoning tasks or scenarios.`
                 });
             }
         });
@@ -862,6 +1052,39 @@ ${JSON.stringify(itemsBatch, null, 2)}
                     <strong class="${summary.cognitiveMismatchCount > 0 ? 'text-yellow-400 font-bold' : 'text-slate-300'}">${summary.cognitiveMismatchCount || 0}</strong>
                 </div>
             </div>
+
+            <!-- Targeted Regeneration Action Banner -->
+            ${(() => {
+                const actionableCount = (summary.improveCount || 0) + (summary.replaceCount || 0);
+                if (isStale) return '';
+                if (actionableCount > 0) {
+                    return `
+                        <div id="repair-action-banner" class="p-4 bg-purple-900/30 border border-purple-500/50 rounded-2xl mb-6 flex flex-wrap justify-between items-center gap-3">
+                            <div>
+                                <strong class="text-white text-sm block font-bold flex items-center gap-1.5">
+                                    <i class="fas fa-tools text-purple-400"></i> Review-Guided Targeted Regeneration Available
+                                </strong>
+                                <p class="text-xs text-slate-300 mt-0.5">
+                                    ${actionableCount} question(s) flagged for improvement. Click below to safely correct answer keys or generate targeted replacements. Approved questions remain 100% unchanged.
+                                </p>
+                            </div>
+                            <button onclick="handleRepairDefectiveQuestions()" id="repair-defective-btn" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 transition-all cursor-pointer">
+                                <i class="fas fa-magic text-purple-200"></i> Repair Defective Questions (${actionableCount})
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="p-4 bg-green-900/30 border border-green-500/50 rounded-2xl mb-6 flex items-center gap-3">
+                            <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                            <div>
+                                <strong class="text-white text-sm font-bold block">All Questions Met Classroom-Ready Standards!</strong>
+                                <p class="text-xs text-green-200">No questions require targeted regeneration. Your assessment is ready for printing or export.</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            })()}
 
             <!-- Examination-Wide Findings & Discrepancy Alerts -->
             ${(summary.discrepancyCount > 0 || summary.rationaleContradictionCount > 0 || summary.unreviewedCount > 0 || (report.examWideFindings && report.examWideFindings.length > 0)) ? `

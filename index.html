@@ -1213,6 +1213,11 @@
                 loadedModel = 'gemini-3.5-flash-lite';
             }
             state.selectedModel = loadedModel;
+
+            let loadedReviewerModel = localStorage.getItem('testmaker_reviewer_model');
+            if (!loadedReviewerModel) loadedReviewerModel = 'gemma-4-31b-it';
+            state.selectedReviewerModel = loadedReviewerModel;
+
             state.thinkingLevel = localStorage.getItem('testmaker_thinking_level') || 'high';
             state.useFallback = localStorage.getItem('testmaker_use_fallback') !== 'false';
             const savedPrompt = localStorage.getItem('system_prompt');
@@ -1388,6 +1393,7 @@
                 if (state.currentTerm) localStorage.setItem('testmaker_current_term', state.currentTerm);
                 if (state.currentView) localStorage.setItem('testmaker_current_view', state.currentView);
                 if (state.selectedModel) localStorage.setItem('testmaker_model', state.selectedModel);
+                if (state.selectedReviewerModel) localStorage.setItem('testmaker_reviewer_model', state.selectedReviewerModel);
                 if (state.thinkingLevel) localStorage.setItem('testmaker_thinking_level', state.thinkingLevel);
                 localStorage.setItem('testmaker_use_fallback', String(state.useFallback));
 
@@ -3458,6 +3464,219 @@
             }
         }
 
+        async function handleRepairDefectiveQuestions() {
+            const report = AIReviewer.currentReport;
+            if (!report || !report.itemReports) {
+                alert("Please run Quality Review first to identify defective items.");
+                return;
+            }
+
+            const session = AppSession.activeSession || AppReviewSession.activeSession;
+            if (!session) {
+                alert("No active session found for targeted regeneration.");
+                return;
+            }
+
+            const repairBtn = document.getElementById('repair-defective-btn');
+            if (repairBtn) {
+                repairBtn.disabled = true;
+                repairBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Repairing Defective Items...';
+            }
+
+            const statusMsg = document.getElementById('review-progress-text') || document.getElementById('dash-status-message');
+
+            try {
+                // Stage A: Perform Safe Answer Key Corrections
+                if (statusMsg) statusMsg.innerText = "Checking answer-key corrections...";
+                const keyCorrectionsCount = AppSession.performSafeKeyCorrections(session, report.itemReports);
+
+                // Stage B: Identify Defective Slots Needing Replacement
+                if (statusMsg) statusMsg.innerText = "Identifying defective slots needing replacement...";
+                const pendingSlots = AppSession.getPendingReplacementSlots(session, report.itemReports);
+
+                if (pendingSlots.length === 0) {
+                    alert(`Targeted repair complete! ${keyCorrectionsCount} answer key(s) safely corrected. All remaining items meet classroom-ready standards!`);
+                    lastGeneratedResults = AppSession.finalizeAssessmentAssembly(session);
+                    renderAssessmentResults(lastGeneratedResults);
+                    return;
+                }
+
+                if (statusMsg) statusMsg.innerText = `Generating level-specific replacements for ${pendingSlots.length} defective item(s)...`;
+
+                // Stage C: Group slots by competency/Bloom and generate replacement candidates
+                const levelGroupMap = new Map();
+                pendingSlots.forEach(slot => {
+                    const key = `${slot.competencyTitle}|${slot.plannedBloomLevel}`;
+                    if (!levelGroupMap.has(key)) levelGroupMap.set(key, []);
+                    levelGroupMap.get(key).push(slot);
+                });
+
+                let systemPromptJson = { role: "Master Assessment Designer" };
+                try { systemPromptJson = JSON.parse(state.systemPrompt.trim()); } catch (e) {}
+
+                const acceptedQuestionsSummary = session.blueprintSlots
+                    .filter(s => s.status === 'ACCEPTED' && s.acceptedQuestion)
+                    .map(s => s.acceptedQuestion.question);
+
+                const allReplacementCandidates = [];
+                const allTargetSlots = [];
+                const allReplacementQuestions = [];
+
+                for (const [groupKey, targetSlots] of levelGroupMap.entries()) {
+                    if (statusMsg) statusMsg.innerText = `Generating replacements for ${targetSlots[0].competencyTitle.substring(0, 25)}... [${targetSlots[0].plannedBloomLevel}]`;
+
+                    const genResult = await callGenerateMCQByBloomGroup({
+                        apiKey: state.apiKey,
+                        subject: session.subjectName,
+                        competency: targetSlots[0].competencyTitle,
+                        notes: targetSlots[0].notes,
+                        targetBloomLevel: targetSlots[0].plannedBloomLevel,
+                        targetSlots: targetSlots,
+                        acceptedQuestionsSummary,
+                        category: session.category,
+                        systemPrompt: systemPromptJson,
+                        selectedModel: state.selectedModel,
+                        thinkingLevel: 'low'
+                    });
+
+                    if (genResult && genResult.success && genResult.text) {
+                        let cleanJson = genResult.text.trim();
+                        const firstBrace = cleanJson.indexOf('{');
+                        const lastBrace = cleanJson.lastIndexOf('}');
+                        if (firstBrace !== -1 && lastBrace !== -1) cleanJson = cleanJson.substring(firstBrace, lastBrace + 1);
+                        cleanJson = cleanJson.replace(/"(slot_c\d+_s\d+)"\s*,\s*"question"/g, '"slot_id": "$1", "question"');
+
+                        const parsedObj = JSON.parse(cleanJson);
+                        const batchVal = AppSession.validateBatchResponse(parsedObj, targetSlots);
+
+                        if (batchVal.isValid) {
+                            batchVal.targetSlots.forEach((slot, idx) => {
+                                const q = batchVal.questions[idx];
+                                q.cognitive_level = slot.plannedBloomLevel;
+                                allTargetSlots.push(slot);
+                                allReplacementQuestions.push(q);
+                                allReplacementCandidates.push({
+                                    itemId: slot.slotId,
+                                    slotId: slot.slotId,
+                                    competencyTitle: slot.competencyTitle,
+                                    acceptedQuestion: q
+                                });
+                            });
+                        }
+                    }
+                }
+
+                if (allReplacementCandidates.length > 0) {
+                    // Part 1: Consolidated Fresh Blind AI Review for All Replacement Candidates
+                    if (statusMsg) statusMsg.innerText = `Reviewing ${allReplacementCandidates.length} fresh replacement candidate(s) blindly...`;
+                    const blindPrompt = AIReviewer.buildBlindReviewBatchPrompt(allReplacementCandidates, session.subjectName, session.category);
+                    const blindRes = await executeAiRequest(state.apiKey, blindPrompt, [{ name: state.selectedModel, version: 'v1beta' }], 'minimal');
+                    const blindParsed = AIReviewer.extractAndParseReviewJSON(blindRes.text);
+                    const freshBlindReviews = blindParsed.reviews || [];
+
+                    // Part 2: Consolidated Fresh Rationale Audit for All Replacement Candidates
+                    if (statusMsg) statusMsg.innerText = `Auditing rationales for ${allReplacementCandidates.length} replacement candidate(s)...`;
+                    const auditPrompt = AIReviewer.buildStageBRationalePrompt(allReplacementCandidates, freshBlindReviews);
+                    const auditRes = await executeAiRequest(state.apiKey, auditPrompt, [{ name: state.selectedModel, version: 'v1beta' }], 'minimal');
+                    const auditParsed = AIReviewer.extractAndParseReviewJSON(auditRes.text);
+                    const freshRationaleAudits = auditParsed.rationale_audits || [];
+
+                    // Part 3: Process Fresh Review Findings
+                    const freshReviewReports = allTargetSlots.map((slot, idx) => {
+                        const candQ = allReplacementQuestions[idx];
+                        const pA = freshBlindReviews.find(r => r.item_id === slot.slotId) || {};
+                        const pB = freshRationaleAudits.find(r => r.item_id === slot.slotId) || {};
+
+                        if (!pA.recommended_status) {
+                            pA.recommended_status = (pA.independent_best_answer_index === candQ.answer_index) ? "KEEP" : "REPLACE";
+                        }
+                        if (!pA.answer_uniqueness_status) {
+                            pA.answer_uniqueness_status = pA.answer_uniqueness || "UNIQUE_CORRECT";
+                        }
+
+                        const processed = AIReviewer.applyHardFailureRulesAndDiscrepancies(pA, candQ, [], pB);
+
+                        return {
+                            itemId: slot.slotId,
+                            slotId: slot.slotId,
+                            competency: slot.competencyTitle,
+                            questionStem: candQ.question,
+                            options: candQ.options,
+                            originalAnswerIndex: candQ.answer_index,
+                            originalCognitiveLevel: slot.plannedBloomLevel,
+                            independentlyAssessedCognitiveLevel: processed.actualCognitiveLevel || slot.plannedBloomLevel,
+                            independentBestAnswerIndex: processed.solvedIndex,
+                            answerAgreement: (processed.solvedIndex === candQ.answer_index),
+                            contentSupportStatus: pA.content_support_status || "DIRECTLY_SUPPORTED",
+                            distractorAssessment: pA.distractor_assessment || null,
+                            rationaleFindings: pB,
+                            issues: processed.issues || [],
+                            decision: processed.finalStatus
+                        };
+                    });
+
+                    // Commit replacement candidates with fresh review reports
+                    AppSession.commitReplacementBatch(allTargetSlots, allReplacementQuestions, freshReviewReports);
+
+                    // Part 4: Update In-Memory Review Report Entries
+                    freshReviewReports.forEach(freshRep => {
+                        const repIdx = report.itemReports.findIndex(i => i.itemId === freshRep.itemId || i.slotId === freshRep.slotId);
+                        if (repIdx !== -1) {
+                            report.itemReports[repIdx] = { ...report.itemReports[repIdx], ...freshRep };
+                        } else {
+                            report.itemReports.push(freshRep);
+                        }
+                    });
+                }
+
+                // Stage F: Final Assembly and In-Memory Report Refresh (ZERO API CALLS DISPATCHED!)
+                if (statusMsg) statusMsg.innerText = "Finalizing assessment assembly...";
+                lastGeneratedResults = AppSession.finalizeAssessmentAssembly(session);
+                renderAssessmentResults(lastGeneratedResults);
+
+                // Recalculate Report Summary Counts in Memory
+                const repItems = report.itemReports || [];
+                report.summary = {
+                    totalItems: repItems.length,
+                    keepCount: repItems.filter(i => i.decision === 'PASS' || i.decision === 'KEEP').length,
+                    improveCount: repItems.filter(i => i.decision === 'IMPROVE').length,
+                    replaceCount: repItems.filter(i => i.decision === 'REPLACE').length,
+                    teacherReviewCount: repItems.filter(i => i.decision === 'TEACHER_REVIEW' || i.slotStatus === 'TEACHER_REVIEW').length,
+                    unreviewedCount: repItems.filter(i => i.decision === 'UNASSESSED').length,
+                    discrepancyCount: repItems.filter(i => i.answerKeyDiscrepancy || i.answerAgreement === false).length
+                };
+
+                AIReviewer.currentReport = report;
+
+                // Render refreshed report locally without dispatching any API requests
+                const reportContainer = document.getElementById('quality-review-container');
+                if (reportContainer) {
+                    AIReviewer.renderReviewReportUI(reportContainer, report, false);
+                    reportContainer.scrollIntoView({ behavior: 'smooth' });
+                }
+
+            } catch (err) {
+                console.error("Repair Error:", err);
+                alert("Targeted Repair Error: " + err.message);
+            } finally {
+                if (repairBtn) {
+                    repairBtn.disabled = false;
+                    repairBtn.innerHTML = '<i class="fas fa-magic text-purple-200"></i> Repair Defective Questions';
+                }
+            }
+        }
+
+            } catch (err) {
+                console.error("Repair Error:", err);
+                alert("Targeted Repair Error: " + err.message);
+            } finally {
+                if (repairBtn) {
+                    repairBtn.disabled = false;
+                    repairBtn.innerHTML = '<i class="fas fa-magic text-purple-200"></i> Repair Defective Questions';
+                }
+            }
+        }
+
         function checkAndRenderResumeReviewBanner() {
             if (typeof AppReviewSession === 'undefined' || typeof generateContentFingerprint === 'undefined') return;
             const savedSession = AppReviewSession.loadSavedSession();
@@ -3810,12 +4029,15 @@
                     break;
                 }
 
-                // Pick first competency with pending slots
-                const firstPendingCompTitle = pendingSlots[0].competencyTitle;
-                const compPendingSlots = pendingSlots.filter(s => s.competencyTitle === firstPendingCompTitle);
+                // Pick first pending slot and group pending slots by competency AND planned Bloom level
+                const firstPendingSlot = pendingSlots[0];
+                const levelPendingSlots = pendingSlots.filter(s =>
+                    s.competencyTitle === firstPendingSlot.competencyTitle &&
+                    s.plannedBloomLevel === firstPendingSlot.plannedBloomLevel
+                );
 
-                // Take micro-batch of size session.batchSize (default 2)
-                const targetBatchSlots = compPendingSlots.slice(0, session.batchSize || 2);
+                // Take level-specific batch of up to session.batchSize (default 5 or 6 items)
+                const targetBatchSlots = levelPendingSlots.slice(0, session.batchSize || 6);
 
                 // Summary of previously accepted questions in session
                 const acceptedQuestionsSummary = session.blueprintSlots
@@ -3823,15 +4045,16 @@
                     .map(s => s.acceptedQuestion.question);
 
                 const msgElem = document.getElementById('dash-status-message');
-                if (msgElem) msgElem.innerText = `Dispatching micro-batch for ${targetBatchSlots.length} item(s)...`;
+                if (msgElem) msgElem.innerText = `Dispatching Level-Specific Batch for ${targetBatchSlots.length} item(s) [${targetBatchSlots[0].plannedBloomLevel}]...`;
                 updateGenerationDashboardUI();
 
                 try {
-                    const result = await callGenerateMCQMicroBatch({
+                    const result = await callGenerateMCQByBloomGroup({
                         apiKey: state.apiKey,
                         subject: session.subjectName,
                         competency: targetBatchSlots[0].competencyTitle,
                         notes: targetBatchSlots[0].notes,
+                        targetBloomLevel: targetBatchSlots[0].plannedBloomLevel,
                         targetSlots: targetBatchSlots,
                         acceptedQuestionsSummary,
                         category: session.category,
@@ -3839,7 +4062,7 @@
                         selectedModel: session.lockedModel,
                         thinkingLevel: session.lockedThinkingLevel,
                         onThrottled: (waitMs, stats) => {
-                            if (msgElem) msgElem.innerText = `Quota Throttled: Waiting ${Math.ceil(waitMs/1000)}s for 60s rolling window budget...`;
+                            if (msgElem) msgElem.innerText = `Quota Throttled: Waiting ${Math.ceil(waitMs/1000)}s for rolling window budget...`;
                             updateGenerationDashboardUI();
                         }
                     });
@@ -3856,8 +4079,8 @@
                         const batchValidation = AppSession.validateBatchResponse(parsedData, targetBatchSlots);
 
                         if (batchValidation.isValid) {
-                            AppSession.commitAcceptedBatch(targetBatchSlots, batchValidation.questions);
-                            if (msgElem) msgElem.innerText = `Micro-batch accepted (${targetBatchSlots.length} items)!`;
+                            AppSession.commitAcceptedBatch(batchValidation.targetSlots || targetBatchSlots, batchValidation.questions);
+                            if (msgElem) msgElem.innerText = `Micro-batch accepted (${batchValidation.questions.length} items)!`;
                         } else {
                             throw new Error(batchValidation.error);
                         }

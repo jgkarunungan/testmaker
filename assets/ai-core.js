@@ -19,12 +19,33 @@ const AI_CONFIG = {
         },
         'gemma-4-31b-it': {
             name: 'gemma-4-31b-it',
-            displayName: 'Gemma 4 31B IT',
+            displayName: 'Gemma 4 31B IT (Primary Reviewer)',
             version: 'v1beta',
             supportsThinking: true,
             thinkingLevels: [
                 { value: 'high', label: 'High Reasoning' },
                 { value: 'minimal', label: 'Minimal Reasoning' }
+            ],
+            defaultThinking: 'high'
+        },
+        'gemini-3.6-flash': {
+            name: 'gemini-3.6-flash',
+            displayName: 'Gemini 3.6 Flash (Comparison Reviewer)',
+            version: 'v1beta',
+            supportsThinking: true,
+            thinkingLevels: [
+                { value: 'high', label: 'High Reasoning' },
+                { value: 'medium', label: 'Medium Reasoning' }
+            ],
+            defaultThinking: 'high'
+        },
+        'gemma-4-26b-a4b-it': {
+            name: 'gemma-4-26b-a4b-it',
+            displayName: 'Gemma 4 26B A4B IT (Alternative Reviewer)',
+            version: 'v1beta',
+            supportsThinking: true,
+            thinkingLevels: [
+                { value: 'high', label: 'High Reasoning' }
             ],
             defaultThinking: 'high'
         },
@@ -42,7 +63,9 @@ const AI_CONFIG = {
             defaultThinking: 'high'
         }
     },
-    DEFAULT_MODEL: 'gemini-3.5-flash-lite'
+    DEFAULT_MODEL: 'gemini-3.5-flash-lite',
+    DEFAULT_GENERATOR_MODEL: 'gemini-3.5-flash-lite',
+    DEFAULT_REVIEWER_MODEL: 'gemma-4-31b-it'
 };
 
 function getModelConfig(selectedModel) {
@@ -404,6 +427,134 @@ ${JSON.stringify(systemPrompt, null, 2)}
 }
 
 /**
+ * Generates a Level-Specific Batch of Multiple Choice Questions for a single competency and single Bloom's level.
+ * (Phase 14 Blueprint-Controlled MCQ Generation)
+ */
+async function callGenerateMCQByBloomGroup(inputs) {
+    const { apiKey, subject, competency, notes, targetBloomLevel, targetSlots, acceptedQuestionsSummary = [], category, systemPrompt, selectedModel, thinkingLevel, onThrottled } = inputs;
+
+    const formattedNotes = (notes && typeof notes === 'string' && notes.trim().length > 0)
+        ? notes.trim()
+        : "[NO SPECIFIC TEACHER NOTES PROVIDED - Assess learning competency broadly within curriculum boundaries.]";
+
+    const bloomRigorDescriptions = {
+        'Remembering': 'Retrieve relevant facts, concepts, terms, or definitions directly supported by notes. Avoid artificially complicated stems.',
+        'Understanding': 'Interpret, explain, compare, or distinguish concepts. Require comprehension rather than simple term recognition.',
+        'Applying': 'Use a taught principle in a new but familiar scenario. Require selecting or applying the correct concept.',
+        'Analyzing': 'Examine relationships, components, causes, or conceptual distinctions. Require actual analysis rather than simple term recognition.',
+        'Evaluating': 'Make a defensible judgment using clear criteria or evidence from taught material. Discriminate between alternatives.'
+    };
+
+    const targetBloomInstruction = bloomRigorDescriptions[targetBloomLevel] || 'Assess the assigned Bloom cognitive operation directly.';
+
+    const slotsFormatted = targetSlots.map((slot, idx) =>
+        `Item ${idx + 1} (Slot ID: ${slot.slotId}): Knowledge Target: "${slot.knowledgeTarget || 'Core Lesson Concept'}" | Reasoning Operation: "${slot.reasoningOperation || 'Target Operation'}"`
+    ).join('\n');
+
+    const previousSummaryText = (Array.isArray(acceptedQuestionsSummary) && acceptedQuestionsSummary.length > 0)
+        ? acceptedQuestionsSummary.map((qText, idx) => `- Previously Accepted Item ${idx + 1}: "${qText.substring(0, 100)}..."`).join('\n')
+        : "[No previous items in this session yet]";
+
+    const prompt = `
+Act as a Master Assessment Designer and Subject Matter Specialist in ${subject}.
+Target Audience: Category ${category} Senior High School Students.
+
+SYSTEM CONFIGURATION:
+${JSON.stringify(systemPrompt, null, 2)}
+
+1. AUTHORITATIVE TARGET & INSTRUCTIONAL BOUNDARIES:
+   - SUBJECT: "${subject}"
+   - LEARNING COMPETENCY: "${competency}"
+   - TARGET BLOOM COGNITIVE LEVEL FOR THIS BATCH: "${targetBloomLevel}"
+   - BLOOM OPERATIONAL DIRECTIVE: ${targetBloomInstruction}
+   - TEACHER'S AI GUIDANCE & NOTES (AUTHORITATIVE INSTRUCTIONAL SCOPE):
+     <ai_guidance_and_notes>
+     ${formattedNotes}
+     </ai_guidance_and_notes>
+
+2. LEVEL-SPECIFIC TARGET SLOTS (Generate EXACTLY ${targetSlots.length} items for "${targetBloomLevel}"):
+   ${slotsFormatted}
+
+3. PREVENT QUESTION REPETITION & DUPLICATE SCENARIOS:
+   Avoid creating scenarios or question stems similar to these previously accepted items:
+   ${previousSummaryText}
+
+4. MANDATORY DISTRACTOR MISCONCEPTION ENGINEERING & CONCISE STEMS:
+   - CONCISE STEMS: Question stems must be direct, clear, and concise (1-2 sentences, ~100-150 characters). Avoid long-winded introductory paragraphs or unnecessary background fluff on LOTS items.
+   - Construct exactly 3 distractors for each question from realistic, subject-specific student misconceptions:
+     * Confusing two related taught concepts.
+     * Reversing cause and effect relationships.
+     * Misapplying a rule or principle to the wrong situation.
+     * Overgeneralizing a specific rule.
+     * Confusing necessary versus sufficient conditions.
+   - NO DUPLICATE OPTIONS: All 4 choices must be distinct in meaning and text.
+   - NO ABSURD DISTRACTORS & NO EXTREME ABSOLUTES: Strictly forbid joke choices or artificial "always/never/completely" giveaways.
+   - PARALLEL STRUCTURE: All 4 choices must be comparable in length, syntax, and detail.
+
+5. REQUIRED JSON OUTPUT SCHEMA:
+   Return ONLY a valid JSON object matching this schema (NO MARKDOWN, NO COMMENTS):
+   {
+     "questions": [
+       {
+         "slot_id": "Slot ID from target slots above",
+         "question": "Educational stimulus followed by clear question stem...",
+         "options": [
+           "Option choice 1",
+           "Option choice 2",
+           "Option choice 3",
+           "Option choice 4"
+         ],
+         "option_ids": ["opt_0", "opt_1", "opt_2", "opt_3"],
+         "answer_index": 0,
+         "cognitive_level": "${targetBloomLevel}",
+         "rationale": "Clear pedagogical explanation of why option index 0 is defensible and why distractors represent common misconceptions."
+       }
+     ]
+   }
+   }
+`;
+
+    // Rate-limit scheduling check BEFORE sending request
+    let schedulerReqRecord = null;
+    if (typeof AIScheduler !== 'undefined' && typeof AIScheduler.scheduleRequest === 'function') {
+        schedulerReqRecord = await AIScheduler.scheduleRequest(prompt, {
+            model: selectedModel,
+            onThrottled: onThrottled
+        });
+    }
+
+    const modelObj = (typeof getModelConfig === 'function') ? getModelConfig(selectedModel) : { name: selectedModel };
+    const result = await executeAiRequest(apiKey, prompt, [modelObj], thinkingLevel || 'low');
+
+    if (schedulerReqRecord && result && result.diagnostics && result.diagnostics.usageMetadata) {
+        if (typeof AIScheduler !== 'undefined' && typeof AIScheduler.reconcileUsage === 'function') {
+            AIScheduler.reconcileUsage(schedulerReqRecord, result.diagnostics.usageMetadata);
+        }
+    }
+
+    if (result.success) {
+        let cleanJson = result.text.trim();
+        const start = cleanJson.indexOf('{');
+        const end = cleanJson.lastIndexOf('}');
+        if (start !== -1 && end !== -1) {
+            const jsonText = cleanJson.substring(start, end + 1);
+            try {
+                const parsedObj = JSON.parse(jsonText);
+                if (Array.isArray(parsedObj.questions)) {
+                    parsedObj.questions.forEach(q => {
+                        if (!q.cognitive_level) q.cognitive_level = targetBloomLevel;
+                    });
+                }
+                return { text: JSON.stringify(parsedObj), success: true };
+            } catch (e) {
+                return { success: false, text: "AI returned invalid JSON: " + jsonText };
+            }
+        }
+    }
+    return result;
+}
+
+/**
  * Internal helper to handle the Fetch API, diagnostics, and error reporting
  */
 async function executeAiRequest(apiKey, prompt, models, thinkingLevel = 'low') {
@@ -421,18 +572,19 @@ async function executeAiRequest(apiKey, prompt, models, thinkingLevel = 'low') {
             };
 
             const modelConfig = (typeof getModelConfig === 'function') ? getModelConfig(model.name) : model;
-            let sanitizedLevel = 'high';
+            let sanitizedLevel = 'low';
             if (modelConfig && modelConfig.supportsThinking) {
                 const validLevels = (modelConfig.thinkingLevels || []).map(l => l.value);
                 const reqLevel = (thinkingLevel || '').toLowerCase();
-                sanitizedLevel = validLevels.includes(reqLevel) ? reqLevel : (modelConfig.defaultThinking || 'high');
+                sanitizedLevel = validLevels.includes(reqLevel) ? reqLevel : (modelConfig.defaultThinking || 'low');
 
                 requestBody.generationConfig.thinkingConfig = {
                     thinkingLevel: sanitizedLevel
                 };
             }
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/${model.version || 'v1beta'}/models/${model.name}:generateContent?key=${apiKey}`, {
+            const cleanKey = encodeURIComponent((apiKey || '').toString().replace(/[\r\n\t ]/g, ''));
+            const response = await fetch(`https://generativelanguage.googleapis.com/${model.version || 'v1beta'}/models/${model.name}:generateContent?key=${cleanKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)

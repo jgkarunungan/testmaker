@@ -351,7 +351,19 @@ async function callGenerateMCQMicroBatch(inputs) {
     ).join('\n');
 
     const previousSummaryText = (Array.isArray(acceptedQuestionsSummary) && acceptedQuestionsSummary.length > 0)
-        ? acceptedQuestionsSummary.map((qText, idx) => `- Previously Accepted Item ${idx + 1}: "${qText.substring(0, 100)}..."`).join('\n')
+        ? acceptedQuestionsSummary
+            .map((qText, idx) => {
+                const text = (typeof qText === 'string')
+                    ? qText
+                    : (typeof AppLogic !== 'undefined' && typeof AppLogic.getItemStem === 'function'
+                        ? AppLogic.getItemStem(qText)
+                        : (qText?.stem || qText?.question || ''));
+                return (typeof text === 'string' && text.trim().length > 0)
+                    ? `- Previously Accepted Item ${idx + 1}: "${text.trim().substring(0, 100)}..."`
+                    : null;
+            })
+            .filter(Boolean)
+            .join('\n')
         : "[No previous items in this session yet]";
 
     const prompt = `
@@ -452,7 +464,19 @@ async function callGenerateMCQByBloomGroup(inputs) {
     ).join('\n');
 
     const previousSummaryText = (Array.isArray(acceptedQuestionsSummary) && acceptedQuestionsSummary.length > 0)
-        ? acceptedQuestionsSummary.map((qText, idx) => `- Previously Accepted Item ${idx + 1}: "${qText.substring(0, 100)}..."`).join('\n')
+        ? acceptedQuestionsSummary
+            .map((qText, idx) => {
+                const text = (typeof qText === 'string')
+                    ? qText
+                    : (typeof AppLogic !== 'undefined' && typeof AppLogic.getItemStem === 'function'
+                        ? AppLogic.getItemStem(qText)
+                        : (qText?.stem || qText?.question || ''));
+                return (typeof text === 'string' && text.trim().length > 0)
+                    ? `- Previously Accepted Item ${idx + 1}: "${text.trim().substring(0, 100)}..."`
+                    : null;
+            })
+            .filter(Boolean)
+            .join('\n')
         : "[No previous items in this session yet]";
 
     const prompt = `

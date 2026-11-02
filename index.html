@@ -3525,7 +3525,9 @@
 
                 const acceptedQuestionsSummary = session.blueprintSlots
                     .filter(s => s.status === 'ACCEPTED' && s.acceptedQuestion)
-                    .map(s => s.acceptedQuestion.question);
+                    .map(s => (typeof AppLogic !== 'undefined' && typeof AppLogic.getItemStem === 'function')
+                        ? AppLogic.getItemStem(s.acceptedQuestion)
+                        : (s.acceptedQuestion.stem || s.acceptedQuestion.question || ''));
 
                 const allReplacementCandidates = [];
                 const allTargetSlots = [];
@@ -4040,7 +4042,9 @@
                 // Summary of previously accepted questions in session
                 const acceptedQuestionsSummary = session.blueprintSlots
                     .filter(s => s.status === 'ACCEPTED' && s.acceptedQuestion)
-                    .map(s => s.acceptedQuestion.question);
+                    .map(s => (typeof AppLogic !== 'undefined' && typeof AppLogic.getItemStem === 'function')
+                        ? AppLogic.getItemStem(s.acceptedQuestion)
+                        : (s.acceptedQuestion.stem || s.acceptedQuestion.question || ''));
 
                 const msgElem = document.getElementById('dash-status-message');
                 if (msgElem) msgElem.innerText = `Dispatching Level-Specific Batch for ${targetBatchSlots.length} item(s) [${targetBatchSlots[0].plannedBloomLevel}]...`;

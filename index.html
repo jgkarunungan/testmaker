@@ -3666,17 +3666,6 @@
             }
         }
 
-            } catch (err) {
-                console.error("Repair Error:", err);
-                alert("Targeted Repair Error: " + err.message);
-            } finally {
-                if (repairBtn) {
-                    repairBtn.disabled = false;
-                    repairBtn.innerHTML = '<i class="fas fa-magic text-purple-200"></i> Repair Defective Questions';
-                }
-            }
-        }
-
         function checkAndRenderResumeReviewBanner() {
             if (typeof AppReviewSession === 'undefined' || typeof generateContentFingerprint === 'undefined') return;
             const savedSession = AppReviewSession.loadSavedSession();
